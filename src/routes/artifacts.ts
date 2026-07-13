@@ -200,14 +200,33 @@ artifacts.post('/keys', async (c) => {
   }
 });
 
-// PUT /api/v1/artifacts/:id/visibility - Update artifact visibility
-artifacts.put('/artifacts/:id/visibility', authMiddleware, async (c) => {
+// PUT /api/v1/artifacts/:id/visibility - Update artifact visibility (supports owner token)
+artifacts.put('/artifacts/:id/visibility', async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
     const input = VisibilitySchema.parse(body);
 
-    await updateArtifactVisibility(id, getApiKeyHash(c), input.visibility, input.password);
+    // Support both API key and owner token authentication
+    const apiKeyHash = getApiKeyHash(c);
+    const ownerToken = c.req.query('owner');
+
+    if (!apiKeyHash && !ownerToken) {
+      return c.json({ error: 'Authorization required (API key or owner token)' }, 401);
+    }
+
+    // If using owner token, verify it matches
+    if (ownerToken) {
+      const { getArtifact } = await import('../services/artifact.js');
+      const artifact = await getArtifact(id);
+      if (artifact.owner_token !== ownerToken) {
+        return c.json({ error: 'Invalid owner token' }, 403);
+      }
+      // Use the API key hash from the artifact for the update
+      await updateArtifactVisibility(id, artifact.api_key_hash, input.visibility, input.password);
+    } else {
+      await updateArtifactVisibility(id, apiKeyHash, input.visibility, input.password);
+    }
 
     return c.json({ success: true, visibility: input.visibility });
   } catch (error) {

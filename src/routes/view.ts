@@ -198,11 +198,13 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       ).join('')
     : `<option value="${version}" selected>v${version}</option>`;
 
-  const visibilityBadge = artifact.visibility === 'private'
-    ? '<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.65rem">🔒 Private</span>'
-    : artifact.visibility === 'password'
-    ? '<span style="background:#f59e0b;color:#000;padding:2px 8px;border-radius:12px;font-size:0.65rem">🔑 Password</span>'
-    : '<span style="background:#22c55e;color:#000;padding:2px 8px;border-radius:12px;font-size:0.65rem">🌐 Public</span>';
+  const vis = artifact.visibility || 'public';
+  const visColor = vis === 'private' ? '#ef4444' : vis === 'password' ? '#f59e0b' : '#22c55e';
+  const visIcon = vis === 'private' ? '🔒' : vis === 'password' ? '🔑' : '🌐';
+  const visLabel = vis === 'private' ? 'Private' : vis === 'password' ? 'Password' : 'Public';
+
+  // Check if owner is viewing (has owner token in URL)
+  const isOwner = isShareLink;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -220,13 +222,52 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     .toolbar a { color: #6cf; text-decoration: none; font-size: 0.75rem; }
     .toolbar a:hover { text-decoration: underline; }
     .artifact-frame { flex: 1; border: none; background: #fff; }
+    .vis-btn { background: ${visColor}; color: ${vis === 'password' ? '#000' : '#fff'}; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: none; position: relative; }
+    .vis-btn:hover { opacity: 0.85; }
+    .vis-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 0; min-width: 200px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .vis-dropdown.show { display: block; }
+    .vis-option { padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; transition: background 0.15s; }
+    .vis-option:hover { background: #334155; }
+    .vis-option.active { background: #0f172a; color: #38bdf8; }
+    .vis-option .icon { font-size: 1rem; }
+    .vis-option .desc { font-size: 0.75rem; color: #64748b; }
+    .pwd-section { padding: 12px 16px; border-top: 1px solid #334155; display: none; }
+    .pwd-section.show { display: block; }
+    .pwd-section input { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #475569; border-radius: 4px; color: #fff; font-size: 0.85rem; margin-bottom: 8px; }
+    .pwd-section button { width: 100%; padding: 8px; background: #38bdf8; color: #0f172a; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+    .pwd-section button:hover { background: #0ea5e9; }
+    .pwd-section .hint { font-size: 0.7rem; color: #64748b; margin-top: 4px; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: #000; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; opacity: 0; transition: opacity 0.3s; z-index: 200; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #ef4444; color: #fff; }
   </style>
 </head>
 <body>
   <div class="toolbar">
     <h1>${escapeHtml(artifact.title)}</h1>
     <div class="meta">
-      ${visibilityBadge}
+      <div style="position:relative">
+        <button class="vis-btn" onclick="toggleVisDropdown()">${visIcon} ${visLabel}</button>
+        <div class="vis-dropdown" id="visDropdown">
+          <div class="vis-option ${vis === 'public' ? 'active' : ''}" onclick="changeVis('public')">
+            <span class="icon">🌐</span>
+            <div><div>Public</div><div class="desc">Anyone can view</div></div>
+          </div>
+          <div class="vis-option ${vis === 'password' ? 'active' : ''}" onclick="changeVis('password')">
+            <span class="icon">🔑</span>
+            <div><div>Password</div><div class="desc">Requires password</div></div>
+          </div>
+          <div class="vis-option ${vis === 'private' ? 'active' : ''}" onclick="changeVis('private')">
+            <span class="icon">🔒</span>
+            <div><div>Private</div><div class="desc">Owner only</div></div>
+          </div>
+          <div class="pwd-section" id="pwdSection">
+            <input type="password" id="newPwd" placeholder="Set password..." />
+            <button onclick="savePassword()">Save Password</button>
+            <div class="hint">Set a password for password-protected mode</div>
+          </div>
+        </div>
+      </div>
       <span>v${version}</span>
       <span>by ${escapeHtml(artifact.author_name || 'Anonymous')}</span>
       <select onchange="switchVersion(this.value)">
@@ -237,11 +278,78 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     </div>
   </div>
   <iframe class="artifact-frame" srcdoc="${escapeHtml(content).replace(/"/g, '&quot;')}" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+  <div class="toast" id="toast"></div>
   <script>
+    const ARTIFACT_ID = '${artifact.id}';
+    const OWNER_TOKEN = new URLSearchParams(window.location.search).get('owner') || '';
+
     function switchVersion(v) {
       const url = new URL(window.location.href);
       url.searchParams.set('v', v);
       window.location.href = url.toString();
+    }
+
+    function toggleVisDropdown() {
+      document.getElementById('visDropdown').classList.toggle('show');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.vis-btn') && !e.target.closest('.vis-dropdown')) {
+        document.getElementById('visDropdown').classList.remove('show');
+      }
+    });
+
+    function showToast(msg, isError = false) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(() => t.className = 'toast', 2500);
+    }
+
+    async function changeVis(vis) {
+      const pwdSection = document.getElementById('pwdSection');
+      if (vis === 'password') {
+        pwdSection.classList.toggle('show');
+        return;
+      }
+      pwdSection.classList.remove('show');
+      try {
+        const res = await fetch('/api/v1/artifacts/' + ARTIFACT_ID + '/visibility?owner=' + OWNER_TOKEN, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visibility: vis })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ Changed to ' + vis);
+          setTimeout(() => location.reload(), 800);
+        } else {
+          showToast('❌ ' + (data.error || 'Failed'), true);
+        }
+      } catch (e) {
+        showToast('❌ Network error', true);
+      }
+    }
+
+    async function savePassword() {
+      const pwd = document.getElementById('newPwd').value;
+      if (!pwd) { showToast('Enter a password', true); return; }
+      try {
+        const res = await fetch('/api/v1/artifacts/' + ARTIFACT_ID + '/visibility?owner=' + OWNER_TOKEN, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visibility: 'password', password: pwd })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ Password set!');
+          setTimeout(() => location.reload(), 800);
+        } else {
+          showToast('❌ ' + (data.error || 'Failed'), true);
+        }
+      } catch (e) {
+        showToast('❌ Network error', true);
+      }
     }
   </script>
 </body>
