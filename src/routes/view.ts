@@ -25,115 +25,130 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AnyArtifact - Free AI Artifact Hosting</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: #e2e8f0; line-height: 1.6; }
-    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
-    .hero { text-align: center; padding: 3rem 0 2rem; }
-    .hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg,#38bdf8,#818cf8,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .hero .subtitle { color: #94a3b8; font-size: 1.1rem; margin-bottom: 1rem; }
-    .hero .tagline { color: #64748b; font-size: 0.9rem; }
-    .section { margin: 2rem 0; }
-    .section h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
-    .section h2 .emoji { font-size: 1.2rem; }
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; color: #e2e8f0; }
-    .card p { color: #94a3b8; font-size: 0.9rem; }
-    pre { background: #0f172a; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.82rem; color: #e2e8f0; border: 1px solid #1e293b; margin: 0.75rem 0; }
-    code { font-family: 'SF Mono', 'Fira Code', monospace; }
-    .inline-code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
-    .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 1rem; }
-    .tool-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; transition: border-color 0.2s; }
-    .tool-card:hover { border-color: #38bdf8; }
-    .tool-card .name { font-weight: 600; color: #e2e8f0; margin-bottom: 4px; font-size: 0.95rem; }
-    .tool-card .cmd { background: #0f172a; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 0.78rem; color: #38bdf8; margin-top: 8px; cursor: pointer; border: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; }
-    .tool-card .cmd:hover { border-color: #475569; }
-    .tool-card .cmd .copy { color: #64748b; font-size: 0.7rem; }
-    .vis-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 1rem; }
-    .vis-card { background: #1e293b; border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #334155; }
-    .vis-card .icon { font-size: 1.5rem; margin-bottom: 8px; }
-    .vis-card .label { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
-    .vis-card .desc { color: #64748b; font-size: 0.8rem; }
-    .artifacts { margin-top: 2rem; }
-    .artifacts h2 { margin-bottom: 1rem; }
-    .artifact-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.5rem; transition: border-color 0.2s; display: flex; justify-content: space-between; align-items: center; }
-    .artifact-card:hover { border-color: #38bdf8; }
-    .artifact-card a { color: #38bdf8; text-decoration: none; font-weight: 500; }
-    .artifact-card a:hover { text-decoration: underline; }
-    .artifact-card .meta { color: #64748b; font-size: 0.8rem; }
-    .empty { color: #475569; text-align: center; padding: 2rem; }
-    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #1e293b; color: #475569; text-align: center; font-size: 0.8rem; }
-    .footer a { color: #38bdf8; text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
-    .badge.green { background: rgba(34,197,94,.15); color: #4ade80; }
-    .badge.blue { background: rgba(56,189,248,.15); color: #38bdf8; }
-    .badge.purple { background: rgba(168,85,247,.15); color: #a855f7; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;color:#e2e8f0;line-height:1.6}
+    .container{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+    .hero{text-align:center;padding:3rem 0 2rem}
+    .hero h1{font-size:2.8rem;margin-bottom:.5rem;background:linear-gradient(135deg,#38bdf8,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero .sub{color:#94a3b8;font-size:1.1rem;margin-bottom:.5rem}
+    .hero .tags{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .hero .tag{background:#1e293b;border:1px solid #334155;padding:4px 12px;border-radius:20px;font-size:.75rem;color:#94a3b8}
+    .section{margin:2.5rem 0}
+    .section h2{font-size:1.2rem;margin-bottom:1rem;color:#e2e8f0;display:flex;align-items:center;gap:8px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+    .card p{color:#94a3b8;font-size:.9rem}
+    pre{background:#0f172a;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.82rem;color:#e2e8f0;border:1px solid #1e293b;margin:.75rem 0}
+    code{font-family:'SF Mono','Fira Code',monospace}
+    .ic{background:#334155;padding:2px 6px;border-radius:4px;font-size:.85rem}
+    .prompt-box{background:linear-gradient(135deg,#1e1b4b,#0f172a);border:2px solid #818cf8;border-radius:12px;padding:1.5rem;margin:2rem 0;position:relative}
+    .prompt-box::before{content:'📋 SYSTEM PROMPT';position:absolute;top:-12px;left:20px;background:#818cf8;color:#fff;padding:2px 12px;border-radius:8px;font-size:.7rem;font-weight:700;letter-spacing:.5px}
+    .prompt-box p{color:#c4b5fd;font-size:.9rem;margin-bottom:12px;margin-top:8px}
+    .prompt-box pre{background:#0f172a;border-color:#4c1d95;margin:0}
+    .prompt-box .copy-btn{position:absolute;top:12px;right:12px;background:#818cf8;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .prompt-box .copy-btn:hover{background:#a78bfa}
+    .prompt-box .copy-btn.copied{background:#22c55e}
+    .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:1rem}
+    .tool-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px;transition:border-color .2s}
+    .tool-card:hover{border-color:#38bdf8}
+    .tool-card .name{font-weight:600;color:#e2e8f0;font-size:.9rem;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .tool-card .name .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
+    .tool-card .cmd{background:#0f172a;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:.72rem;color:#38bdf8;cursor:pointer;border:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}
+    .tool-card .cmd:hover{border-color:#475569}
+    .tool-card .cmd .copy{color:#64748b;font-size:.65rem;flex-shrink:0}
+    .tool-card .cmd .text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .vis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:1rem}
+    .vis-card{background:#1e293b;border-radius:10px;padding:16px;text-align:center;border:1px solid #334155}
+    .vis-card .icon{font-size:1.5rem;margin-bottom:6px}
+    .vis-card .label{font-weight:600;font-size:.9rem}
+    .vis-card .desc{color:#64748b;font-size:.78rem;margin-top:2px}
+    .api-table{width:100%;font-size:.85rem;border-collapse:collapse}
+    .api-table tr{border-bottom:1px solid #334155}
+    .api-table td{padding:8px}
+    .api-table td:first-child{color:#38bdf8;font-family:monospace;font-size:.82rem}
+    .api-table td:last-child{color:#94a3b8}
+    .artifacts{margin-top:2.5rem}
+    .artifacts h2{margin-bottom:1rem}
+    .artifact-card{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:1rem 1.25rem;margin-bottom:.5rem;transition:border-color .2s;display:flex;justify-content:space-between;align-items:center}
+    .artifact-card:hover{border-color:#38bdf8}
+    .artifact-card a{color:#38bdf8;text-decoration:none;font-weight:500}
+    .artifact-card a:hover{text-decoration:underline}
+    .artifact-card .meta{color:#64748b;font-size:.8rem}
+    .empty{color:#475569;text-align:center;padding:2rem}
+    .footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid #1e293b;color:#475569;text-align:center;font-size:.8rem}
+    .footer a{color:#38bdf8;text-decoration:none}
+    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600}
+    .badge.green{background:rgba(34,197,94,.15);color:#4ade80}
+    @media(max-width:700px){.tools-grid,.vis-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="hero">
       <h1>AnyArtifact</h1>
-      <p class="subtitle">Free interactive artifact hosting for any AI agent</p>
-      <p class="tagline">Works with Claude Code, Cursor, Cline, KiloCode, OpenCode, and any MCP-compatible tool</p>
+      <p class="sub">Free interactive artifact hosting for any AI agent</p>
+      <div class="tags">
+        <span class="tag">🌐 Public</span>
+        <span class="tag">🔑 Password</span>
+        <span class="tag">🔒 Private</span>
+        <span class="tag">🔌 MCP</span>
+        <span class="tag">📦 Versioned</span>
+        <span class="tag">🆓 No API Key</span>
+      </div>
+    </div>
+
+    <div class="prompt-box">
+      <button class="copy-btn" onclick="copyPrompt(this)">📋 Copy Prompt</button>
+      <p>Copy this prompt and paste it into your coding assistant to enable artifact publishing:</p>
+      <pre><code>When I ask you to create an interactive HTML artifact (chart, dashboard, visualization, or any web page), publish it to AnyArtifact using the publish_artifact MCP tool. Always use these settings: visibility "public" so anyone with the link can view it. After publishing, give me the URL. The MCP server is already configured — just use the publish_artifact tool directly.</code></pre>
     </div>
 
     <div class="section">
-      <h2><span class="emoji">⚡</span> One-Line Setup</h2>
-      <p style="color:#94a3b8;margin-bottom:12px;font-size:.9rem">Add AnyArtifact to your coding tool in one command:</p>
+      <h2>⚡ One-Line Setup</h2>
+      <p style="color:#94a3b8;margin-bottom:8px;font-size:.88rem">Add AnyArtifact to your coding tool:</p>
       <div class="tools-grid">
         <div class="tool-card">
-          <div class="name">Claude Code</div>
-          <div class="cmd" onclick="copyCmd(this)"><span>claude mcp add anyartifact https://anyartifact-production.up.railway.app/mcp</span><span class="copy">copy</span></div>
+          <div class="name"><span class="dot"></span>Claude Code</div>
+          <div class="cmd" onclick="copyCmd(this)"><span class="text">claude mcp add anyartifact https://anyartifact-production.up.railway.app/mcp</span><span class="copy">copy</span></div>
         </div>
         <div class="tool-card">
-          <div class="name">Cline</div>
-          <div class="cmd" onclick="copyCmd(this)"><span>Add MCP server URL in Cline settings → MCP Servers</span><span class="copy">copy</span></div>
+          <div class="name"><span class="dot"></span>Cline</div>
+          <div class="cmd" onclick="copyCmd(this)"><span class="text">Settings → MCP Servers → Add URL: https://anyartifact-production.up.railway.app/mcp</span><span class="copy">copy</span></div>
         </div>
         <div class="tool-card">
-          <div class="name">KiloCode</div>
-          <div class="cmd" onclick="copyCmd(this)"><span>Add to .kilocode/mcp.json: {"anyartifact":{"url":"https://anyartifact-production.up.railway.app/mcp"}}</span><span class="copy">copy</span></div>
+          <div class="name"><span class="dot"></span>KiloCode</div>
+          <div class="cmd" onclick="copyCmd(this)"><span class="text">.kilocode/mcp.json → "anyartifact": {"url": "https://anyartifact-production.up.railway.app/mcp"}</span><span class="copy">copy</span></div>
         </div>
         <div class="tool-card">
-          <div class="name">OpenCode</div>
-          <div class="cmd" onclick="copyCmd(this)"><span>Add to opencode.json mcpServers.anyartifact</span><span class="copy">copy</span></div>
+          <div class="name"><span class="dot"></span>Cursor</div>
+          <div class="cmd" onclick="copyCmd(this)"><span class="text">.cursor/mcp.json → "anyartifact": {"url": "https://anyartifact-production.up.railway.app/mcp"}</span><span class="copy">copy</span></div>
         </div>
         <div class="tool-card">
-          <div class="name">Cursor</div>
-          <div class="cmd" onclick="copyCmd(this)"><span>Add to .cursor/mcp.json: {"anyartifact":{"url":"https://anyartifact-production.up.railway.app/mcp"}}</span><span class="copy">copy</span></div>
+          <div class="name"><span class="dot"></span>OpenCode</div>
+          <div class="cmd" onclick="copyCmd(this)"><span class="text">opencode.json → mcpServers.anyartifact.url</span><span class="copy">copy</span></div>
         </div>
         <div class="tool-card">
-          <div class="name">Windsurf</div>
-          <div class="cmd" onclick="copyCmd(this)"><span>Add to .windsurfrules mcp section with the URL above</span><span class="copy">copy</span></div>
+          <div class="name"><span class="dot"></span>Windsurf</div>
+          <div class="cmd" onclick="copyCmd(this)"><span class="text">.windsurfrules → mcp.anyartifact with URL above</span><span class="copy">copy</span></div>
         </div>
       </div>
     </div>
 
     <div class="section">
-      <h2><span class="emoji">🔌</span> MCP Server URL</h2>
+      <h2>🚀 Publish — No API Key Needed</h2>
       <div class="card">
-        <p>Copy this URL and add it to any MCP-compatible tool:</p>
-        <pre><code>https://anyartifact-production.up.railway.app/mcp</code></pre>
-        <p style="font-size:.85rem;color:#64748b">Tools auto-discover: <code class="inline-code">publish_artifact</code>, <code class="inline-code">update_artifact</code>, <code class="inline-code">get_artifact</code>, <code class="inline-code">list_artifacts</code></p>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2><span class="emoji">🚀</span> Publish — No API Key Needed</h2>
-      <div class="card">
-        <p style="margin-bottom:8px">Anyone can publish. You get an <strong>owner URL</strong> back — that's your key to view and manage the artifact.</p>
+        <p style="margin-bottom:8px">Anyone can publish. You get an <strong style="color:#e2e8f0">owner URL</strong> back — that's your key to view and manage the artifact.</p>
         <pre><code>curl -X POST https://anyartifact-production.up.railway.app/api/v1/artifacts \\
   -H "Content-Type: application/json" \\
   -d '{
     "content": "&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;",
     "title": "My Artifact"
   }'</code></pre>
-        <p style="font-size:.85rem;color:#64748b">Default visibility: <code class="inline-code">private</code> (owner only). You'll get an <code class="inline-code">owner_url</code> in the response.</p>
+        <p style="font-size:.85rem;color:#64748b">Default: <code class="ic">private</code> (owner only). Response includes <code class="ic">owner_url</code>, <code class="ic">share_url</code>, and <code class="ic">url</code>.</p>
       </div>
     </div>
 
     <div class="section">
-      <h2><span class="emoji">🌐</span> Visibility Controls</h2>
+      <h2>🌐 Visibility Controls</h2>
       <div class="vis-grid">
         <div class="vis-card">
           <div class="icon">🌐</div>
@@ -202,14 +217,19 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
   </div>
   <script>
     function copyCmd(el) {
-      const text = el.querySelector('span').textContent;
+      const text = el.querySelector('.text').textContent;
       navigator.clipboard.writeText(text).then(() => {
         el.querySelector('.copy').textContent = 'copied!';
         el.style.borderColor = '#22c55e';
-        setTimeout(() => {
-          el.querySelector('.copy').textContent = 'copy';
-          el.style.borderColor = '';
-        }, 2000);
+        setTimeout(() => { el.querySelector('.copy').textContent = 'copy'; el.style.borderColor = ''; }, 2000);
+      });
+    }
+    function copyPrompt(btn) {
+      const text = btn.parentElement.querySelector('code').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 Copy Prompt'; btn.classList.remove('copied'); }, 2500);
       });
     }
   </script>
