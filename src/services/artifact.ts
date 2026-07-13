@@ -129,8 +129,8 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
   const contentHash = sha256(input.content);
   const sizeBytes = Buffer.byteLength(input.content, 'utf-8');
 
-  // Handle visibility
-  const visibility = input.visibility || 'public';
+  // Handle visibility - default to private (owner only)
+  const visibility = input.visibility || 'private';
   const passwordHash = input.password ? sha256(input.password) : null;
   const shareToken = generateId(32); // Always generate a share token
   const ownerToken = generateId(32); // Owner access token for private artifacts

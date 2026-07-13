@@ -119,12 +119,16 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     </div>
 
     <div class="section">
-      <h2><span class="emoji">🔑</span> Get Your API Key</h2>
+      <h2><span class="emoji">🚀</span> Publish — No API Key Needed</h2>
       <div class="card">
-        <pre><code>curl -X POST https://anyartifact-production.up.railway.app/api/v1/keys \\
+        <p style="margin-bottom:8px">Anyone can publish. You get an <strong>owner URL</strong> back — that's your key to view and manage the artifact.</p>
+        <pre><code>curl -X POST https://anyartifact-production.up.railway.app/api/v1/artifacts \\
   -H "Content-Type: application/json" \\
-  -d '{"label": "My Agent"}'</code></pre>
-        <p style="font-size:.85rem;color:#64748b">Returns an <code class="inline-code">aa_...</code> key. Save it — it won't be shown again.</p>
+  -d '{
+    "content": "&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;",
+    "title": "My Artifact"
+  }'</code></pre>
+        <p style="font-size:.85rem;color:#64748b">Default visibility: <code class="inline-code">private</code> (owner only). You'll get an <code class="inline-code">owner_url</code> in the response.</p>
       </div>
     </div>
 

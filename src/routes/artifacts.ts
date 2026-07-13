@@ -44,15 +44,20 @@ const CreateKeySchema = z.object({
   label: z.string().max(100).optional(),
 });
 
-// POST /api/v1/artifacts - Publish new artifact
-artifacts.post('/artifacts', authMiddleware, publishRateLimit(), async (c) => {
+// POST /api/v1/artifacts - Publish new artifact (no auth required)
+artifacts.post('/artifacts', publishRateLimit(), async (c) => {
   try {
     const body = await c.req.json();
     const input = PublishSchema.parse(body);
 
+    // Use IP as api_key_hash if no auth provided
+    const apiKeyHash = c.req.header('Authorization')
+      ? getApiKeyHash(c)
+      : (c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'anonymous');
+
     const result = await publishArtifact({
       ...input,
-      api_key_hash: getApiKeyHash(c),
+      api_key_hash: apiKeyHash,
     });
 
     return c.json(result, 201);

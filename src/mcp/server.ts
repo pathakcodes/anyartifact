@@ -88,27 +88,20 @@ mcpRoutes.post('/tools/call', async (c) => {
     const body = await c.req.json();
     const { name, arguments: args } = body;
 
-    // Get API key from header
+    // Get API key from header (optional - falls back to IP)
+    let apiKeyHash = 'anonymous';
     const authHeader = c.req.header('Authorization');
-    if (!authHeader) {
-      return c.json({
-        error: { message: 'Authorization header required', code: 'UNAUTHORIZED' },
-      }, 401);
+    if (authHeader) {
+      const match = authHeader.match(/^Bearer\s+(.+)$/i);
+      if (match) {
+        const record = await verifyApiKey(match[1]);
+        if (record) {
+          apiKeyHash = record.key_hash;
+        }
+      }
     }
-
-    const match = authHeader.match(/^Bearer\s+(.+)$/i);
-    if (!match) {
-      return c.json({
-        error: { message: 'Invalid authorization format', code: 'UNAUTHORIZED' },
-      }, 401);
-    }
-
-    const apiKey = match[1];
-    const record = await verifyApiKey(apiKey);
-    if (!record) {
-      return c.json({
-        error: { message: 'Invalid API key', code: 'UNAUTHORIZED' },
-      }, 401);
+    if (apiKeyHash === 'anonymous') {
+      apiKeyHash = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'anonymous';
     }
 
     // Execute tool
@@ -117,7 +110,7 @@ mcpRoutes.post('/tools/call', async (c) => {
         const input = PublishSchema.parse(args);
         const result = await publishArtifact({
           ...input,
-          api_key_hash: record.key_hash,
+          api_key_hash: apiKeyHash,
         });
 
         return c.json({
@@ -137,7 +130,7 @@ mcpRoutes.post('/tools/call', async (c) => {
           content: input.content,
           title: input.title,
           description: input.description,
-          api_key_hash: record.key_hash,
+          api_key_hash: apiKeyHash,
         });
 
         return c.json({
