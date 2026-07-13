@@ -63,4 +63,29 @@ export function runMigrations(db: SqlJsDatabase): void {
   db.run(`CREATE INDEX IF NOT EXISTS idx_versions_artifact ON artifact_versions(artifact_id, version_number DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_versions_hash ON artifact_versions(content_hash)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
+
+  // Migration: Add visibility columns to existing artifacts table
+  // These ALTER TABLE statements are safe to run even if columns already exist
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN visibility TEXT DEFAULT 'public'`); } catch {}
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN password_hash TEXT`); } catch {}
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN share_token TEXT`); } catch {}
+
+  // Generate share tokens for existing artifacts that don't have one
+  const needsToken = db.exec(`SELECT id FROM artifacts WHERE share_token IS NULL AND is_deleted = 0`);
+  if (needsToken.length > 0 && needsToken[0].values.length > 0) {
+    for (const row of needsToken[0].values) {
+      const id = row[0] as string;
+      const token = generateToken();
+      db.run(`UPDATE artifacts SET share_token = ? WHERE id = ?`, [token, id]);
+    }
+  }
+}
+
+function generateToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
