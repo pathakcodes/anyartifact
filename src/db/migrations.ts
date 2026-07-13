@@ -69,6 +69,7 @@ export function runMigrations(db: SqlJsDatabase): void {
   try { db.run(`ALTER TABLE artifacts ADD COLUMN visibility TEXT DEFAULT 'public'`); } catch {}
   try { db.run(`ALTER TABLE artifacts ADD COLUMN password_hash TEXT`); } catch {}
   try { db.run(`ALTER TABLE artifacts ADD COLUMN share_token TEXT`); } catch {}
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN owner_token TEXT`); } catch {}
 
   // Generate share tokens for existing artifacts that don't have one
   const needsToken = db.exec(`SELECT id FROM artifacts WHERE share_token IS NULL AND is_deleted = 0`);
@@ -77,6 +78,16 @@ export function runMigrations(db: SqlJsDatabase): void {
       const id = row[0] as string;
       const token = generateToken();
       db.run(`UPDATE artifacts SET share_token = ? WHERE id = ?`, [token, id]);
+    }
+  }
+
+  // Generate owner tokens for existing artifacts that don't have one
+  const needsOwnerToken = db.exec(`SELECT id FROM artifacts WHERE owner_token IS NULL AND is_deleted = 0`);
+  if (needsOwnerToken.length > 0 && needsOwnerToken[0].values.length > 0) {
+    for (const row of needsOwnerToken[0].values) {
+      const id = row[0] as string;
+      const token = generateToken();
+      db.run(`UPDATE artifacts SET owner_token = ? WHERE id = ?`, [token, id]);
     }
   }
 }

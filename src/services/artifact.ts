@@ -15,6 +15,7 @@ export interface Artifact {
   visibility: 'public' | 'private' | 'password';
   password_hash: string | null;
   share_token: string | null;
+  owner_token: string | null;
   created_at: number;
   updated_at: number;
   is_deleted: number;
@@ -50,6 +51,7 @@ export interface PublishResult {
   size_bytes: number;
   visibility: string;
   share_url?: string;
+  owner_url?: string;
 }
 
 export class NotFoundError extends Error {
@@ -85,6 +87,7 @@ function mapArtifactResult(columns: string[], values: any[]): Artifact {
     visibility: (values[columns.indexOf('visibility')] as string || 'public') as 'public' | 'private' | 'password',
     password_hash: values[columns.indexOf('password_hash')] as string | null,
     share_token: values[columns.indexOf('share_token')] as string | null,
+    owner_token: values[columns.indexOf('owner_token')] as string | null,
     created_at: values[columns.indexOf('created_at')] as number,
     updated_at: values[columns.indexOf('updated_at')] as number,
     is_deleted: values[columns.indexOf('is_deleted')] as number,
@@ -130,10 +133,11 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
   const visibility = input.visibility || 'public';
   const passwordHash = input.password ? sha256(input.password) : null;
   const shareToken = generateId(32); // Always generate a share token
+  const ownerToken = generateId(32); // Owner access token for private artifacts
 
   db.run(`
-    INSERT INTO artifacts (id, title, description, slug, author_name, author_url, api_key_hash, visibility, password_hash, share_token, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO artifacts (id, title, description, slug, author_name, author_url, api_key_hash, visibility, password_hash, share_token, owner_token, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     id,
     input.title || 'Untitled',
@@ -145,6 +149,7 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
     visibility,
     passwordHash,
     shareToken,
+    ownerToken,
     timestamp,
     timestamp,
   ]);
@@ -164,6 +169,7 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
     size_bytes: sizeBytes,
     visibility,
     share_url: `${baseUrl}/share/${shareToken}`,
+    owner_url: `${baseUrl}/${id}?owner=${ownerToken}`,
   };
 }
 

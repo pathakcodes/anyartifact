@@ -103,6 +103,11 @@ viewRoutes.get('/share/:token', viewRateLimit(), async (c) => {
 
     // Check visibility
     if (artifact.visibility === 'private') {
+      // Check for owner token
+      const ownerToken = c.req.query('owner');
+      if (ownerToken && artifact.owner_token && ownerToken === artifact.owner_token) {
+        return c.html(renderViewer(artifact, content, 1, true));
+      }
       return c.html(renderPasswordPrompt(artifact.id, 'private'), 403);
     }
 
@@ -144,6 +149,12 @@ viewRoutes.get('/:id', viewRateLimit(), async (c) => {
 
     // Check visibility
     if (artifact.visibility === 'private') {
+      // Check for owner token
+      const ownerToken = c.req.query('owner');
+      if (ownerToken && artifact.owner_token && ownerToken === artifact.owner_token) {
+        const currentVersion = version || 1;
+        return c.html(renderViewer(artifact, content, currentVersion));
+      }
       return c.html(renderPasswordPrompt(id, 'private'), 403);
     }
 

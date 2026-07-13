@@ -114,6 +114,7 @@ artifacts.get('/artifacts/:id', async (c) => {
       author_url: artifact.author_url,
       visibility: artifact.visibility,
       share_url: artifact.share_token ? `${baseUrl}/share/${artifact.share_token}` : null,
+      owner_url: artifact.owner_token ? `${baseUrl}/${artifact.id}?owner=${artifact.owner_token}` : null,
       version: artifact.versions[0]?.version_number || 1,
       versions: artifact.versions.map((v) => ({
         version: v.version_number,

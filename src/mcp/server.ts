@@ -124,7 +124,7 @@ mcpRoutes.post('/tools/call', async (c) => {
           content: [
             {
               type: 'text',
-              text: `Artifact published successfully!\n\nID: ${result.id}\nURL: ${result.url}\nVersion: ${result.version}\nSize: ${result.size_bytes} bytes\nVisibility: ${result.visibility}${result.share_url ? `\nShare URL: ${result.share_url}` : ''}`,
+              text: `Artifact published successfully!\n\nID: ${result.id}\nURL: ${result.url}\nVersion: ${result.version}\nSize: ${result.size_bytes} bytes\nVisibility: ${result.visibility}${result.share_url ? `\nShare URL: ${result.share_url}` : ''}${result.owner_url ? `\nOwner URL: ${result.owner_url}` : ''}`,
             },
           ],
           metadata: result,
