@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getArtifact, getArtifactContent, listArtifacts, NotFoundError } from '../services/artifact.js';
+import { getArtifact, getArtifactContent, getArtifactByShareToken, listArtifacts, NotFoundError } from '../services/artifact.js';
 import { viewRateLimit } from '../middleware/rate-limit.js';
 
 const viewRoutes = new Hono();
@@ -94,6 +94,40 @@ curl -X POST https://anyartifact.dev/api/v1/artifacts \\
   `);
 });
 
+// GET /share/:token - View artifact via share token
+viewRoutes.get('/share/:token', viewRateLimit(), async (c) => {
+  try {
+    const token = c.req.param('token');
+    const artifact = await getArtifactByShareToken(token);
+    const { content } = await getArtifactContent(artifact.id);
+
+    // Check visibility
+    if (artifact.visibility === 'private') {
+      return c.html(renderPasswordPrompt(artifact.id, 'private'), 403);
+    }
+
+    if (artifact.visibility === 'password') {
+      // Check if password is provided in query
+      const pwd = c.req.query('pwd');
+      if (pwd) {
+        const { verifyArtifactPassword } = await import('../services/artifact.js');
+        const valid = await verifyArtifactPassword(artifact.id, pwd);
+        if (valid) {
+          return c.html(renderViewer(artifact, content, 1, true));
+        }
+      }
+      return c.html(renderPasswordPrompt(artifact.id, 'password'), 403);
+    }
+
+    return c.html(renderViewer(artifact, content, 1, true));
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return c.html(renderNotFound(), 404);
+    }
+    throw error;
+  }
+});
+
 // GET /:id - View artifact
 viewRoutes.get('/:id', viewRateLimit(), async (c) => {
   try {
@@ -108,36 +142,30 @@ viewRoutes.get('/:id', viewRateLimit(), async (c) => {
 
     const { artifact, content } = await getArtifactContent(id, version);
 
-    // Get current version number from query or default to 1
-    const currentVersion = version || 1;
+    // Check visibility
+    if (artifact.visibility === 'private') {
+      return c.html(renderPasswordPrompt(id, 'private'), 403);
+    }
 
+    if (artifact.visibility === 'password') {
+      const pwd = c.req.query('pwd');
+      if (pwd) {
+        const { verifyArtifactPassword } = await import('../services/artifact.js');
+        const valid = await verifyArtifactPassword(id, pwd);
+        if (valid) {
+          const currentVersion = version || 1;
+          return c.html(renderViewer(artifact, content, currentVersion));
+        }
+      }
+      return c.html(renderPasswordPrompt(id, 'password'), 403);
+    }
+
+    // Public - show normally
+    const currentVersion = version || 1;
     return c.html(renderViewer(artifact, content, currentVersion));
   } catch (error) {
     if (error instanceof NotFoundError) {
-      return c.html(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Not Found - AnyArtifact</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .error { text-align: center; }
-    h1 { font-size: 4rem; color: #333; }
-    p { color: #666; margin: 1rem 0; }
-    a { color: #6cf; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <div class="error">
-    <h1>404</h1>
-    <p>Artifact not found</p>
-    <a href="/">← Back to AnyArtifact</a>
-  </div>
-</body>
-</html>
-      `, 404);
+      return c.html(renderNotFound(), 404);
     }
     throw error;
   }
@@ -152,12 +180,18 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
-function renderViewer(artifact: any, content: string, version: number): string {
+function renderViewer(artifact: any, content: string, version: number, isShareLink: boolean = false): string {
   const versionOptions = artifact.versions
     ? artifact.versions.map((v: any) =>
         `<option value="${v.version_number}" ${v.version_number === version ? 'selected' : ''}>v${v.version_number}</option>`
       ).join('')
     : `<option value="${version}" selected>v${version}</option>`;
+
+  const visibilityBadge = artifact.visibility === 'private'
+    ? '<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.65rem">🔒 Private</span>'
+    : artifact.visibility === 'password'
+    ? '<span style="background:#f59e0b;color:#000;padding:2px 8px;border-radius:12px;font-size:0.65rem">🔑 Password</span>'
+    : '<span style="background:#22c55e;color:#000;padding:2px 8px;border-radius:12px;font-size:0.65rem">🌐 Public</span>';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -181,6 +215,7 @@ function renderViewer(artifact: any, content: string, version: number): string {
   <div class="toolbar">
     <h1>${escapeHtml(artifact.title)}</h1>
     <div class="meta">
+      ${visibilityBadge}
       <span>v${version}</span>
       <span>by ${escapeHtml(artifact.author_name || 'Anonymous')}</span>
       <select onchange="switchVersion(this.value)">
@@ -193,9 +228,102 @@ function renderViewer(artifact: any, content: string, version: number): string {
   <iframe class="artifact-frame" srcdoc="${escapeHtml(content).replace(/"/g, '&quot;')}" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
   <script>
     function switchVersion(v) {
-      window.location.href = '/${artifact.id}?v=' + v;
+      const url = new URL(window.location.href);
+      url.searchParams.set('v', v);
+      window.location.href = url.toString();
     }
   </script>
+</body>
+</html>`;
+}
+
+function renderPasswordPrompt(artifactId: string, type: 'private' | 'password'): string {
+  const isPrivate = type === 'private';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${isPrivate ? 'Private' : 'Password Protected'} - AnyArtifact</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 400px; width: 90%; text-align: center; border: 1px solid #334155; }
+    .icon { font-size: 3rem; margin-bottom: 16px; }
+    h1 { font-size: 1.3rem; margin-bottom: 8px; }
+    p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #fff; font-size: 0.95rem; }
+    .form-group input:focus { outline: none; border-color: #38bdf8; }
+    button { width: 100%; padding: 12px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #0ea5e9; }
+    .error { color: #ef4444; font-size: 0.85rem; margin-top: 12px; display: none; }
+    .back { color: #64748b; font-size: 0.8rem; margin-top: 20px; }
+    .back a { color: #38bdf8; text-decoration: none; }
+    .back a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">${isPrivate ? '🔒' : '🔑'}</div>
+    <h1>${isPrivate ? 'This artifact is private' : 'Password Protected'}</h1>
+    <p>${isPrivate ? 'Only the owner can access this artifact.' : 'Enter the password to view this artifact.'}</p>
+    ${isPrivate ? '' : `
+    <form id="pwdForm">
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter password" autofocus />
+      </div>
+      <button type="submit">Unlock</button>
+      <div class="error" id="error">Incorrect password. Try again.</div>
+    </form>
+    `}
+    <div class="back"><a href="/">← Back to AnyArtifact</a></div>
+  </div>
+  ${!isPrivate ? `
+  <script>
+    document.getElementById('pwdForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/v1/artifacts/${artifactId}/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        window.location.href = '/${artifactId}?pwd=' + encodeURIComponent(password);
+      } else {
+        document.getElementById('error').style.display = 'block';
+      }
+    });
+  </script>` : ''}
+</body>
+</html>`;
+}
+
+function renderNotFound(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Not Found - AnyArtifact</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .error { text-align: center; }
+    h1 { font-size: 4rem; color: #333; }
+    p { color: #666; margin: 1rem 0; }
+    a { color: #6cf; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="error">
+    <h1>404</h1>
+    <p>Artifact not found</p>
+    <a href="/">← Back to AnyArtifact</a>
+  </div>
 </body>
 </html>`;
 }

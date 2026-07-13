@@ -9,6 +9,8 @@ import {
   getArtifactContent,
   listArtifacts,
   deleteArtifact,
+  verifyArtifactPassword,
+  updateArtifactVisibility,
   NotFoundError,
   ForbiddenError,
   ValidationError,
@@ -25,6 +27,17 @@ const PublishSchema = z.object({
   slug: z.string().regex(/^[a-zA-Z0-9-]{3,100}$/, 'Slug must be 3-100 characters, alphanumeric and hyphens only').optional(),
   author_name: z.string().max(100).optional(),
   author_url: z.string().url().optional(),
+  visibility: z.enum(['public', 'private', 'password']).optional(),
+  password: z.string().min(1).max(100).optional(),
+});
+
+const VisibilitySchema = z.object({
+  visibility: z.enum(['public', 'private', 'password']),
+  password: z.string().min(1).max(100).optional(),
+});
+
+const VerifyPasswordSchema = z.object({
+  password: z.string().min(1),
 });
 
 const CreateKeySchema = z.object({
@@ -56,25 +69,18 @@ artifacts.post('/artifacts', authMiddleware, publishRateLimit(), async (c) => {
 
 // PUT /api/v1/artifacts/:id - Update artifact
 artifacts.put('/artifacts/:id', authMiddleware, publishRateLimit(), async (c) => {
-  console.log('PUT handler started');
   try {
     const id = c.req.param('id');
-    console.log('ID:', id);
     const body = await c.req.json();
-    console.log('Body parsed');
     const input = PublishSchema.parse(body);
-    console.log('Input validated, api_key_hash:', getApiKeyHash(c)?.substring(0, 10));
 
-    console.log('Calling updateArtifact...');
     const result = await updateArtifact(id, {
       ...input,
       api_key_hash: getApiKeyHash(c),
     });
-    console.log('updateArtifact completed:', result);
 
     return c.json(result);
   } catch (error) {
-    console.log('PUT handler error:', error);
     if (error instanceof z.ZodError) {
       return c.json({ error: 'Validation error', details: error.errors }, 400);
     }
@@ -106,6 +112,8 @@ artifacts.get('/artifacts/:id', async (c) => {
       slug: artifact.slug,
       author_name: artifact.author_name,
       author_url: artifact.author_url,
+      visibility: artifact.visibility,
+      share_url: artifact.share_token ? `${baseUrl}/share/${artifact.share_token}` : null,
       version: artifact.versions[0]?.version_number || 1,
       versions: artifact.versions.map((v) => ({
         version: v.version_number,
@@ -186,6 +194,51 @@ artifacts.post('/keys', async (c) => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return c.json({ error: 'Validation error', details: error.errors }, 400);
+    }
+    throw error;
+  }
+});
+
+// PUT /api/v1/artifacts/:id/visibility - Update artifact visibility
+artifacts.put('/artifacts/:id/visibility', authMiddleware, async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const input = VisibilitySchema.parse(body);
+
+    await updateArtifactVisibility(id, getApiKeyHash(c), input.visibility, input.password);
+
+    return c.json({ success: true, visibility: input.visibility });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Validation error', details: error.errors }, 400);
+    }
+    if (error instanceof NotFoundError) {
+      return c.json({ error: error.message }, 404);
+    }
+    if (error instanceof ForbiddenError) {
+      return c.json({ error: error.message }, 403);
+    }
+    throw error;
+  }
+});
+
+// POST /api/v1/artifacts/:id/verify - Verify password for artifact
+artifacts.post('/artifacts/:id/verify', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const input = VerifyPasswordSchema.parse(body);
+
+    const valid = await verifyArtifactPassword(id, input.password);
+
+    return c.json({ valid });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Validation error', details: error.errors }, 400);
+    }
+    if (error instanceof NotFoundError) {
+      return c.json({ error: error.message }, 404);
     }
     throw error;
   }

@@ -28,6 +28,15 @@ export const publishArtifactTool = {
         type: "string",
         description: "Optional custom URL slug (3-100 characters, alphanumeric and hyphens only)",
       },
+      visibility: {
+        type: "string",
+        enum: ["public", "private", "password"],
+        description: "Visibility: public (anyone can view), private (owner only), password (requires password to view). Default: public",
+      },
+      password: {
+        type: "string",
+        description: "Password for password-protected artifacts (required when visibility is 'password')",
+      },
     },
     required: ["content", "title"],
   },

@@ -11,6 +11,9 @@ export function runMigrations(db: SqlJsDatabase): void {
       author_name TEXT DEFAULT 'Anonymous',
       author_url TEXT,
       api_key_hash TEXT NOT NULL,
+      visibility TEXT DEFAULT 'public' CHECK(visibility IN ('public', 'private', 'password')),
+      password_hash TEXT,
+      share_token TEXT UNIQUE,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       is_deleted INTEGER DEFAULT 0
@@ -55,6 +58,8 @@ export function runMigrations(db: SqlJsDatabase): void {
   // Indexes for performance
   db.run(`CREATE INDEX IF NOT EXISTS idx_artifacts_slug ON artifacts(slug)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created_at DESC)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_artifacts_visibility ON artifacts(visibility)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_artifacts_share_token ON artifacts(share_token)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_versions_artifact ON artifact_versions(artifact_id, version_number DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_versions_hash ON artifact_versions(content_hash)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);

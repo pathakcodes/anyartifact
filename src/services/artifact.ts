@@ -12,6 +12,9 @@ export interface Artifact {
   author_name: string;
   author_url: string | null;
   api_key_hash: string;
+  visibility: 'public' | 'private' | 'password';
+  password_hash: string | null;
+  share_token: string | null;
   created_at: number;
   updated_at: number;
   is_deleted: number;
@@ -34,6 +37,8 @@ export interface PublishInput {
   slug?: string;
   author_name?: string;
   author_url?: string;
+  visibility?: 'public' | 'private' | 'password';
+  password?: string;
   api_key_hash: string;
 }
 
@@ -43,6 +48,8 @@ export interface PublishResult {
   version: number;
   created_at: string;
   size_bytes: number;
+  visibility: string;
+  share_url?: string;
 }
 
 export class NotFoundError extends Error {
@@ -75,6 +82,9 @@ function mapArtifactResult(columns: string[], values: any[]): Artifact {
     author_name: values[columns.indexOf('author_name')] as string,
     author_url: values[columns.indexOf('author_url')] as string | null,
     api_key_hash: values[columns.indexOf('api_key_hash')] as string,
+    visibility: (values[columns.indexOf('visibility')] as string || 'public') as 'public' | 'private' | 'password',
+    password_hash: values[columns.indexOf('password_hash')] as string | null,
+    share_token: values[columns.indexOf('share_token')] as string | null,
     created_at: values[columns.indexOf('created_at')] as number,
     updated_at: values[columns.indexOf('updated_at')] as number,
     is_deleted: values[columns.indexOf('is_deleted')] as number,
@@ -116,9 +126,14 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
   const contentHash = sha256(input.content);
   const sizeBytes = Buffer.byteLength(input.content, 'utf-8');
 
+  // Handle visibility
+  const visibility = input.visibility || 'public';
+  const passwordHash = input.password ? sha256(input.password) : null;
+  const shareToken = generateId(32); // Always generate a share token
+
   db.run(`
-    INSERT INTO artifacts (id, title, description, slug, author_name, author_url, api_key_hash, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO artifacts (id, title, description, slug, author_name, author_url, api_key_hash, visibility, password_hash, share_token, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     id,
     input.title || 'Untitled',
@@ -127,6 +142,9 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
     input.author_name || 'Anonymous',
     input.author_url || null,
     input.api_key_hash,
+    visibility,
+    passwordHash,
+    shareToken,
     timestamp,
     timestamp,
   ]);
@@ -144,6 +162,8 @@ export async function publishArtifact(input: PublishInput): Promise<PublishResul
     version: 1,
     created_at: new Date(timestamp).toISOString(),
     size_bytes: sizeBytes,
+    visibility,
+    share_url: `${baseUrl}/share/${shareToken}`,
   };
 }
 
@@ -289,15 +309,15 @@ export async function listArtifacts(page: number = 1, limit: number = 20): Promi
   const offset = (page - 1) * limit;
 
   const artifactsResults = db.exec(`
-    SELECT id, slug, title, description, author_name, author_url, created_at, updated_at
+    SELECT id, slug, title, description, author_name, author_url, visibility, created_at, updated_at
     FROM artifacts
-    WHERE is_deleted = 0
+    WHERE is_deleted = 0 AND visibility = 'public'
     ORDER BY created_at DESC
     LIMIT ? OFFSET ?
   `, [limit, offset]);
 
   const countResults = db.exec(`
-    SELECT COUNT(*) as total FROM artifacts WHERE is_deleted = 0
+    SELECT COUNT(*) as total FROM artifacts WHERE is_deleted = 0 AND visibility = 'public'
   `);
 
   const total = countResults[0]?.values[0]?.[0] as number || 0;
@@ -313,6 +333,7 @@ export async function listArtifacts(page: number = 1, limit: number = 20): Promi
         description: values[columns.indexOf('description')] as string,
         author_name: values[columns.indexOf('author_name')] as string,
         author_url: values[columns.indexOf('author_url')] as string | null,
+        visibility: 'public' as const,
         created_at: values[columns.indexOf('created_at')] as number,
         updated_at: values[columns.indexOf('updated_at')] as number,
       };
@@ -350,4 +371,73 @@ export async function deleteArtifact(id: string, apiKeyHash: string): Promise<vo
   db.run(`
     UPDATE artifacts SET is_deleted = 1, updated_at = ? WHERE id = ?
   `, [now(), id]);
+}
+
+/**
+ * Verify password for a password-protected artifact
+ */
+export async function verifyArtifactPassword(id: string, password: string): Promise<boolean> {
+  const db = await getDatabase();
+
+  const results = db.exec(`
+    SELECT password_hash FROM artifacts WHERE id = ? AND is_deleted = 0
+  `, [id]);
+
+  if (results.length === 0 || results[0].values.length === 0) {
+    throw new NotFoundError('Artifact not found');
+  }
+
+  const passwordHash = results[0].values[0][0] as string | null;
+  if (!passwordHash) return true; // No password set
+
+  return sha256(password) === passwordHash;
+}
+
+/**
+ * Get artifact by share token
+ */
+export async function getArtifactByShareToken(shareToken: string): Promise<Artifact> {
+  const db = await getDatabase();
+
+  const results = db.exec(`
+    SELECT * FROM artifacts WHERE share_token = ? AND is_deleted = 0
+  `, [shareToken]);
+
+  if (results.length === 0 || results[0].values.length === 0) {
+    throw new NotFoundError('Artifact not found');
+  }
+
+  return mapArtifactResult(results[0].columns, results[0].values[0]);
+}
+
+/**
+ * Update artifact visibility
+ */
+export async function updateArtifactVisibility(
+  id: string,
+  apiKeyHash: string,
+  visibility: 'public' | 'private' | 'password',
+  password?: string
+): Promise<void> {
+  const db = await getDatabase();
+
+  const artifactResults = db.exec(`
+    SELECT * FROM artifacts WHERE id = ? AND is_deleted = 0
+  `, [id]);
+
+  if (artifactResults.length === 0 || artifactResults[0].values.length === 0) {
+    throw new NotFoundError('Artifact not found');
+  }
+
+  const artifact = mapArtifactResult(artifactResults[0].columns, artifactResults[0].values[0]);
+
+  if (artifact.api_key_hash !== apiKeyHash) {
+    throw new ForbiddenError('Not authorized to update this artifact');
+  }
+
+  const passwordHash = visibility === 'password' && password ? sha256(password) : null;
+
+  db.run(`
+    UPDATE artifacts SET visibility = ?, password_hash = ?, updated_at = ? WHERE id = ?
+  `, [visibility, passwordHash, now(), id]);
 }

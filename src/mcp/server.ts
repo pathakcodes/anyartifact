@@ -26,6 +26,8 @@ const PublishSchema = z.object({
   description: z.string().max(1000).optional(),
   author_name: z.string().max(100).optional(),
   slug: z.string().regex(/^[a-zA-Z0-9-]{3,100}$/).optional(),
+  visibility: z.enum(['public', 'private', 'password']).optional(),
+  password: z.string().min(1).max(100).optional(),
 });
 
 const UpdateSchema = z.object({
@@ -122,7 +124,7 @@ mcpRoutes.post('/tools/call', async (c) => {
           content: [
             {
               type: 'text',
-              text: `Artifact published successfully!\n\nID: ${result.id}\nURL: ${result.url}\nVersion: ${result.version}\nSize: ${result.size_bytes} bytes`,
+              text: `Artifact published successfully!\n\nID: ${result.id}\nURL: ${result.url}\nVersion: ${result.version}\nSize: ${result.size_bytes} bytes\nVisibility: ${result.visibility}${result.share_url ? `\nShare URL: ${result.share_url}` : ''}`,
             },
           ],
           metadata: result,
