@@ -107,12 +107,36 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     .api-path{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#d4d4d8;margin-left:12px;flex:1}
     .api-desc{color:#52525b;font-size:.78rem}
 
+    /* MCP SECTION */
+    .mcp-section{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
+    .mcp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+    .mcp-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.25rem}
+    .mcp-card h3{font-size:.85rem;font-weight:600;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+    .mcp-card p{color:#52525b;font-size:.75rem;margin-top:8px}
+    .mcp-url{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .15s}
+    .mcp-url:hover{border-color:rgba(99,102,241,.4)}
+    .mcp-url code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#c084fc}
+    .mcp-url .hint{font-size:.65rem;color:#52525b}
+    .mcp-tools{display:flex;flex-direction:column;gap:6px}
+    .mcp-tool{display:flex;align-items:center;justify-content:space-between;background:#0f0f11;border-radius:6px;padding:8px 10px}
+    .mcp-tool code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#38bdf8}
+    .mcp-tool span{font-size:.68rem;color:#52525b}
+    .mcp-ep{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+    .mcp-ep:last-child{border:none}
+    .mcp-ep code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#4ade80}
+    .mcp-ep span{font-size:.68rem;color:#52525b}
+    .mcp-proto{display:flex;flex-wrap:wrap;gap:6px}
+    .proto-item .badge{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 10px;border-radius:6px;font-size:.68rem;font-weight:500}
+    .mcp-example{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.25rem}
+    .mcp-example h3{font-size:.85rem;font-weight:600;margin-bottom:.75rem}
+    .mcp-example pre{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#d4d4d8;line-height:1.6;overflow-x:auto}
+
     /* FOOTER */
     footer{border-top:1px solid rgba(255,255,255,.06);padding:2rem;text-align:center;color:#52525b;font-size:.8rem}
     footer a{color:#a1a1aa}
     footer a:hover{color:#fafafa}
 
-    @media(max-width:768px){.tools-grid,.feat-grid,.steps{grid-template-columns:1fr}.hero h1{font-size:2rem}}
+    @media(max-width:768px){.tools-grid,.feat-grid,.steps,.mcp-grid{grid-template-columns:1fr}.hero h1{font-size:2rem}}
   </style>
 </head>
 <body>
@@ -122,6 +146,7 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
       <div class="nav-links">
         <a href="#setup">Setup</a>
         <a href="#features">Features</a>
+        <a href="#mcp">MCP</a>
         <a href="#api">API</a>
         <a href="https://github.com/pathakcodes/anyartifact">GitHub</a>
       </div>
@@ -186,6 +211,64 @@ When I ask you to create an interactive HTML artifact (chart, dashboard, visuali
       <div class="step"><div class="num">1</div><h3>Publish</h3><p>POST your HTML to the API or use the MCP tool. No authentication required.</p><code>POST /api/v1/artifacts</code></div>
       <div class="step"><div class="num">2</div><h3>Get your URL</h3><p>Receive an <code>owner_url</code>, <code>share_url</code>, and direct <code>url</code> in the response.</p><code>owner_url</code></div>
       <div class="step"><div class="num">3</div><h3>Manage</h3><p>Open your owner URL. Click the visibility badge to switch between Public, Password, or Private.</p><code>visibility badge</code></div>
+    </div>
+  </section>
+
+  <section class="mcp-section" id="mcp">
+    <div class="section-label">MCP Server</div>
+    <div class="section-title">Native MCP protocol support</div>
+    <div class="section-desc">Connect AnyArtifact directly to your AI agent via Model Context Protocol</div>
+    <div class="mcp-grid">
+      <div class="mcp-card">
+        <h3>🔌 Server URL</h3>
+        <div class="mcp-url" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')">
+          <code>https://anyartifact-production.up.railway.app/mcp</code>
+          <span class="hint">copy</span>
+        </div>
+        <p>SSE + JSON-RPC transport</p>
+      </div>
+      <div class="mcp-card">
+        <h3>🛠️ Available Tools</h3>
+        <div class="mcp-tools">
+          <div class="mcp-tool"><code>publish_artifact</code><span>Create new artifact</span></div>
+          <div class="mcp-tool"><code>update_artifact</code><span>Update existing</span></div>
+          <div class="mcp-tool"><code>get_artifact</code><span>Get metadata</span></div>
+          <div class="mcp-tool"><code>list_artifacts</code><span>List public</span></div>
+        </div>
+      </div>
+      <div class="mcp-card">
+        <h3>📡 Endpoints</h3>
+        <div class="mcp-ep"><code>/mcp/sse</code><span>SSE connection</span></div>
+        <div class="mcp-ep"><code>/mcp/message</code><span>JSON-RPC messages</span></div>
+        <div class="mcp-ep"><code>/mcp/tools</code><span>List tools (REST)</span></div>
+        <div class="mcp-ep"><code>/mcp/tools/call</code><span>Call tool (REST)</span></div>
+      </div>
+      <div class="mcp-card">
+        <h3>⚡ Protocol</h3>
+        <div class="mcp-proto">
+          <div class="proto-item"><span class="badge">JSON-RPC 2.0</span></div>
+          <div class="proto-item"><span class="badge">SSE Transport</span></div>
+          <div class="proto-item"><span class="badge">Session Mgmt</span></div>
+          <div class="proto-item"><span class="badge">v2024-11-05</span></div>
+        </div>
+        <p style="margin-top:10px">Supports <code style="color:#818cf8">initialize</code>, <code style="color:#818cf8">tools/list</code>, <code style="color:#818cf8">tools/call</code></p>
+      </div>
+    </div>
+    <div class="mcp-example">
+      <h3>Example: MCP tool call</h3>
+      <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "publish_artifact",
+    "arguments": {
+      "content": "&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;",
+      "title": "My Artifact",
+      "visibility": "public"
+    }
+  }
+}</code></pre>
     </div>
   </section>
 
