@@ -46,8 +46,8 @@ const ListSchema = z.object({
   limit: z.number().optional(),
 });
 
-// Store active SSE sessions
-const sessions = new Map<string, ReadableStreamDefaultController>();
+// Active SSE sessions
+const sessions = new Map<string, { controller: ReadableStreamDefaultController; encoder: TextEncoder }>();
 
 // Get all available tools
 function getTools() {
@@ -127,28 +127,37 @@ async function executeTool(name: string, args: any, apiKeyHash: string) {
   }
 }
 
+// Send SSE event to a session
+function sendSSE(sessionId: string, event: string, data: any) {
+  const session = sessions.get(sessionId);
+  if (session) {
+    const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    session.controller.enqueue(session.encoder.encode(message));
+  }
+}
+
 /**
- * MCP SSE endpoint - establishes SSE connection
- * Client connects here to receive events
+ * SSE endpoint - client connects here
+ * Server sends endpoint event with message URL
  */
 mcpRoutes.get('/sse', async (c) => {
-  const sessionId = Math.random().toString(36).substring(2, 15);
+  const sessionId = crypto.randomUUID().slice(0, 12);
+  const baseUrl = process.env.BASE_URL || `https://${c.req.header('host')}`;
 
   const stream = new ReadableStream({
     start(controller) {
-      sessions.set(sessionId, controller);
-
-      // Send endpoint event telling client where to POST messages
-      const endpointUrl = `${process.env.BASE_URL || `http://${c.req.header('host')}`}/mcp/message?sessionId=${sessionId}`;
-
       const encoder = new TextEncoder();
+      sessions.set(sessionId, { controller, encoder });
+
+      // Send endpoint event with message URL
+      const endpointUrl = `${baseUrl}/mcp/message?sessionId=${sessionId}`;
       controller.enqueue(encoder.encode(`event: endpoint\ndata: ${endpointUrl}\n\n`));
 
-      // Send initialized notification
-      controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n\n`));
+      console.log(`[MCP] SSE session ${sessionId} connected`);
     },
     cancel() {
       sessions.delete(sessionId);
+      console.log(`[MCP] SSE session ${sessionId} disconnected`);
     },
   });
 
@@ -157,24 +166,32 @@ mcpRoutes.get('/sse', async (c) => {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no',
     },
   });
 });
 
 /**
- * MCP message endpoint - receives JSON-RPC messages from client
+ * Message endpoint - receives JSON-RPC requests from client
+ * Sends responses back via SSE
  */
 mcpRoutes.post('/message', async (c) => {
+  const sessionId = c.req.query('sessionId');
+
+  if (!sessionId || !sessions.has(sessionId)) {
+    return c.json({ error: 'Invalid or missing sessionId' }, 400);
+  }
+
   try {
-    const sessionId = c.req.query('sessionId');
     const body = await c.req.json();
     const { id, method, params } = body;
+
+    console.log(`[MCP] Session ${sessionId}: ${method}`);
 
     let result: any = null;
 
     switch (method) {
-      case 'initialize': {
+      case 'initialize':
         result = {
           protocolVersion: '2024-11-05',
           capabilities: {
@@ -186,17 +203,19 @@ mcpRoutes.post('/message', async (c) => {
           },
         };
         break;
-      }
 
-      case 'tools/list': {
+      case 'notifications/initialized':
+        // Client acknowledges initialization, no response needed
+        return c.json({ ok: true });
+
+      case 'tools/list':
         result = { tools: getTools() };
         break;
-      }
 
       case 'tools/call': {
-        const { name, arguments: args } = params;
+        const { name, arguments: args } = params || {};
 
-        // Get API key from header (optional)
+        // Get API key from header
         let apiKeyHash = 'anonymous';
         const authHeader = c.req.header('Authorization');
         if (authHeader) {
@@ -214,53 +233,54 @@ mcpRoutes.post('/message', async (c) => {
         break;
       }
 
-      case 'ping': {
+      case 'ping':
         result = {};
         break;
-      }
 
       default:
-        return c.json({
+        // Send error response
+        sendSSE(sessionId, 'message', {
           jsonrpc: '2.0',
           id,
           error: { code: -32601, message: `Method not found: ${method}` },
         });
+        return c.json({ ok: true });
     }
 
-    // Send response via SSE if session exists
-    if (sessionId && sessions.has(sessionId)) {
-      const controller = sessions.get(sessionId)!;
-      const encoder = new TextEncoder();
-      const response = { jsonrpc: '2.0', id, result };
-      controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify(response)}\n\n`));
-      return c.json({ ok: true });
-    }
-
-    // Otherwise return response directly (for stateless calls)
-    return c.json({ jsonrpc: '2.0', id, result });
-  } catch (error) {
-    console.error('MCP message error:', error);
-    const id = (await c.req.json().catch(() => ({})))?.id;
-    return c.json({
+    // Send success response via SSE
+    sendSSE(sessionId, 'message', {
       jsonrpc: '2.0',
       id,
+      result,
+    });
+
+    return c.json({ ok: true });
+  } catch (error) {
+    console.error(`[MCP] Session ${sessionId} error:`, error);
+
+    const body = await c.req.json().catch(() => ({}));
+    sendSSE(sessionId, 'message', {
+      jsonrpc: '2.0',
+      id: body.id,
       error: {
         code: -32603,
         message: error instanceof Error ? error.message : 'Internal error',
       },
     });
+
+    return c.json({ ok: true });
   }
 });
 
 /**
- * MCP tools/list endpoint (REST fallback)
+ * REST fallback: tools/list
  */
 mcpRoutes.get('/tools', async (c) => {
   return c.json({ tools: getTools() });
 });
 
 /**
- * MCP tools/call endpoint (REST fallback)
+ * REST fallback: tools/call
  */
 mcpRoutes.post('/tools/call', async (c) => {
   try {
@@ -298,30 +318,17 @@ mcpRoutes.post('/tools/call', async (c) => {
 });
 
 /**
- * MCP initialize endpoint (REST fallback)
- */
-mcpRoutes.post('/initialize', async (c) => {
-  return c.json({
-    protocolVersion: '2024-11-05',
-    capabilities: { tools: {} },
-    serverInfo: { name: 'anyartifact', version: '1.0.0' },
-  });
-});
-
-/**
- * Root MCP endpoint - returns server info
+ * Server info endpoint
  */
 mcpRoutes.get('/', async (c) => {
   return c.json({
     name: 'anyartifact',
     version: '1.0.0',
     protocol: 'mcp',
-    transport: ['sse', 'http'],
+    transport: ['sse'],
     endpoints: {
       sse: '/mcp/sse',
       message: '/mcp/message',
-      tools: '/mcp/tools',
-      toolsCall: '/mcp/tools/call',
     },
     tools: getTools().map(t => t.name),
   });
