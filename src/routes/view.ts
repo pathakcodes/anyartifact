@@ -23,149 +23,207 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AnyArtifact - Free AI Artifact Hosting</title>
+  <title>AnyArtifact — Free AI Artifact Hosting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;color:#e2e8f0;overflow-x:hidden}
-    .wrap{max-width:1400px;margin:0 auto;padding:1.5rem 2rem}
-    .top{display:grid;grid-template-columns:1fr 1.8fr;gap:2rem;align-items:start;margin-bottom:1.5rem}
-    .left h1{font-size:2.2rem;background:linear-gradient(135deg,#38bdf8,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-    .left .sub{color:#94a3b8;font-size:.95rem;margin-bottom:10px}
-    .tags{display:flex;gap:6px;flex-wrap:wrap}
-    .tag{background:#1e293b;border:1px solid #334155;padding:3px 10px;border-radius:16px;font-size:.7rem;color:#94a3b8}
-    .prompt-box{background:linear-gradient(135deg,#1e1b4b,#0f172a);border:2px solid #818cf8;border-radius:12px;padding:1rem 1.25rem;position:relative}
-    .prompt-box .lbl{position:absolute;top:-10px;left:16px;background:#818cf8;color:#fff;padding:2px 10px;border-radius:6px;font-size:.65rem;font-weight:700;letter-spacing:.5px}
-    .prompt-box pre{background:#0f172a;border-color:#4c1d95;border-radius:8px;padding:.75rem 1rem;font-size:.72rem;color:#e2e8f0;margin:8px 0 0;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
-    .prompt-box .copy-btn{position:absolute;top:10px;right:10px;background:#818cf8;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.7rem;font-weight:600;cursor:pointer}
-    .prompt-box .copy-btn:hover{background:#a78bfa}
-    .prompt-box .copy-btn.copied{background:#22c55e}
-    .mid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem}
-    .mid .col{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:1rem}
-    .mid .col h3{font-size:.85rem;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-    .tool{display:flex;align-items:center;justify-content:space-between;background:#0f172a;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #1e293b;cursor:pointer;transition:border-color .15s}
-    .tool:hover{border-color:#475569}
-    .tool .n{font-size:.78rem;color:#e2e8f0;display:flex;align-items:center;gap:6px}
-    .tool .n .d{width:6px;height:6px;border-radius:50%;background:#22c55e}
-    .tool .c{font-size:.6rem;color:#64748b}
-    .tool .c.copied{color:#22c55e}
-    .vis{display:flex;gap:8px}
-    .vis .v{flex:1;text-align:center;padding:10px 6px;background:#0f172a;border-radius:8px;border:1px solid #1e293b}
-    .vis .v .i{font-size:1.2rem}
-    .vis .v .l{font-size:.75rem;font-weight:600;margin-top:2px}
-    .vis .v .d{font-size:.65rem;color:#64748b}
-    .api-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1e293b;font-size:.78rem}
+    body{font-family:'Inter',system-ui,sans-serif;background:#09090b;color:#fafafa;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+
+    /* NAV */
+    nav{position:sticky;top:0;z-index:50;background:rgba(9,9,11,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06)}
+    .nav-inner{max-width:1100px;margin:0 auto;padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1rem}
+    .nav-brand .logo{width:28px;height:28px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.8rem}
+    .nav-links{display:flex;gap:2rem;font-size:.85rem;color:#a1a1aa}
+    .nav-links a:hover{color:#fafafa}
+    .nav-cta{background:#fafafa;color:#09090b;padding:7px 16px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+    .nav-cta:hover{opacity:.9}
+
+    /* HERO */
+    .hero{max-width:1100px;margin:0 auto;padding:5rem 2rem 3rem;text-align:center}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:5px 14px;border-radius:999px;font-size:.75rem;font-weight:500;margin-bottom:1.5rem}
+    .hero h1{font-size:3.2rem;font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:1rem}
+    .hero h1 span{background:linear-gradient(135deg,#818cf8,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{color:#a1a1aa;font-size:1.1rem;max-width:560px;margin:0 auto 2rem;line-height:1.6}
+    .hero-btns{display:flex;gap:12px;justify-content:center}
+    .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:12px 28px;border-radius:10px;font-size:.9rem;font-weight:600;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,102,241,.3)}
+    .btn-secondary{background:rgba(255,255,255,.06);color:#fafafa;padding:12px 28px;border-radius:10px;font-size:.9rem;font-weight:500;border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:border-color .15s}
+    .btn-secondary:hover{border-color:rgba(255,255,255,.2)}
+
+    /* PROMPT BOX */
+    .prompt-section{max-width:800px;margin:0 auto 4rem;padding:0 2rem}
+    .prompt-card{background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(168,85,247,.05));border:1px solid rgba(99,102,241,.2);border-radius:16px;padding:1.5rem;position:relative}
+    .prompt-card .label{position:absolute;top:-11px;left:20px;background:#6366f1;color:#fff;padding:3px 12px;border-radius:8px;font-size:.7rem;font-weight:600;letter-spacing:.3px}
+    .prompt-card pre{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:1rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#d4d4d8;line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-word;margin-top:8px}
+    .prompt-card .copy{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.08);color:#d4d4d8;border:1px solid rgba(255,255,255,.08);padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s}
+    .prompt-card .copy:hover{background:rgba(255,255,255,.12)}
+    .prompt-card .copy.ok{background:#22c55e;color:#000;border-color:#22c55e}
+
+    /* TOOLS GRID */
+    .tools-section{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
+    .section-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6366f1;margin-bottom:.75rem}
+    .section-title{font-size:1.5rem;font-weight:700;margin-bottom:.5rem}
+    .section-desc{color:#a1a1aa;font-size:.9rem;margin-bottom:1.5rem}
+    .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .tool-item{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .15s}
+    .tool-item:hover{border-color:rgba(99,102,241,.4);background:rgba(99,102,241,.05)}
+    .tool-item .left{display:flex;align-items:center;gap:10px}
+    .tool-item .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
+    .tool-item .name{font-size:.85rem;font-weight:500}
+    .tool-item .hint{font-size:.7rem;color:#52525b}
+    .tool-item .hint.done{color:#22c55e}
+
+    /* FEATURES */
+    .features{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
+    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .feat-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.5rem;transition:border-color .2s}
+    .feat-card:hover{border-color:rgba(99,102,241,.3)}
+    .feat-card .icon{font-size:1.5rem;margin-bottom:.75rem}
+    .feat-card h3{font-size:.95rem;font-weight:600;margin-bottom:.35rem}
+    .feat-card p{color:#71717a;font-size:.82rem;line-height:1.5}
+
+    /* HOW IT WORKS */
+    .how{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:1.5rem}
+    .step{position:relative;padding:1.5rem;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px}
+    .step .num{position:absolute;top:-12px;left:20px;background:#6366f1;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+    .step h3{font-size:.9rem;font-weight:600;margin-bottom:.35rem;margin-top:.25rem}
+    .step p{color:#71717a;font-size:.8rem;line-height:1.5}
+    .step code{font-family:'JetBrains Mono',monospace;font-size:.72rem;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;color:#c084fc}
+
+    /* API REFERENCE */
+    .api{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
+    .api-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.5rem;overflow:hidden}
+    .api-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
     .api-row:last-child{border:none}
-    .api-row .method{font-family:monospace;color:#38bdf8;font-weight:600;width:50px}
-    .api-row .path{font-family:monospace;color:#e2e8f0;flex:1}
-    .api-row .desc{color:#64748b;font-size:.72rem}
-    .bottom{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    .bottom .col{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:1rem}
-    .bottom .col h3{font-size:.85rem;color:#e2e8f0;margin-bottom:8px}
-    .art-card{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e293b}
-    .art-card:last-child{border:none}
-    .art-card a{color:#38bdf8;text-decoration:none;font-size:.82rem}
-    .art-card .m{color:#64748b;font-size:.7rem}
-    .empty{color:#475569;text-align:center;padding:1.5rem;font-size:.85rem}
-    .foot{text-align:center;color:#475569;font-size:.75rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid #1e293b}
-    .foot a{color:#38bdf8;text-decoration:none}
-    code{font-family:'SF Mono','Fira Code',monospace}
+    .api-method{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:4px;min-width:50px;text-align:center}
+    .api-method.post{background:rgba(34,197,94,.12);color:#4ade80}
+    .api-method.put{background:rgba(234,179,8,.12);color:#facc15}
+    .api-method.get{background:rgba(56,189,248,.12);color:#38bdf8}
+    .api-method.del{background:rgba(239,68,68,.12);color:#f87171}
+    .api-path{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#d4d4d8;margin-left:12px;flex:1}
+    .api-desc{color:#52525b;font-size:.78rem}
+
+    /* FOOTER */
+    footer{border-top:1px solid rgba(255,255,255,.06);padding:2rem;text-align:center;color:#52525b;font-size:.8rem}
+    footer a{color:#a1a1aa}
+    footer a:hover{color:#fafafa}
+
+    @media(max-width:768px){.tools-grid,.feat-grid,.steps{grid-template-columns:1fr}.hero h1{font-size:2rem}}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="left">
-        <h1>AnyArtifact</h1>
-        <p class="sub">Free interactive artifact hosting for any AI agent</p>
-        <div class="tags">
-          <span class="tag">🌐 Public</span><span class="tag">🔑 Password</span><span class="tag">🔒 Private</span>
-          <span class="tag">🔌 MCP</span><span class="tag">📦 Versioned</span><span class="tag">🆓 No API Key</span>
-        </div>
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-brand"><div class="logo">⚡</div>AnyArtifact</div>
+      <div class="nav-links">
+        <a href="#setup">Setup</a>
+        <a href="#features">Features</a>
+        <a href="#api">API</a>
+        <a href="https://github.com/pathakcodes/anyartifact">GitHub</a>
       </div>
-      <div class="prompt-box">
-        <span class="lbl">📋 COPY THIS PROMPT TO YOUR CODING ASSISTANT</span>
-        <button class="copy-btn" onclick="copyPrompt(this)">📋 Copy</button>
-        <pre><code>AnyArtifact MCP Server: https://anyartifact-production.up.railway.app/mcp
+      <button class="nav-cta" onclick="document.getElementById('prompt').scrollIntoView({behavior:'smooth'})">Get Started</button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">⚡ Open Source & Free Forever</div>
+    <h1>Interactive artifacts for<br><span>any AI agent</span></h1>
+    <p>Publish HTML artifacts from Claude, Cursor, Cline, or any tool. No API key needed. Get a URL in seconds.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="document.getElementById('prompt').scrollIntoView({behavior:'smooth'})">Quick Start →</button>
+      <a href="https://github.com/pathakcodes/anyartifact" class="btn-secondary">View on GitHub</a>
+    </div>
+  </section>
+
+  <section class="prompt-section" id="prompt">
+    <div class="prompt-card">
+      <div class="label">📋 SYSTEM PROMPT — COPY TO YOUR CODING ASSISTANT</div>
+      <button class="copy" onclick="copyPrompt(this)">📋 Copy</button>
+      <pre><code>AnyArtifact MCP Server: https://anyartifact-production.up.railway.app/mcp
 MCP Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
-API: https://anyartifact-production.up.railway.app/api/v1/artifacts
+API Endpoint: https://anyartifact-production.up.railway.app/api/v1/artifacts
 
 When I ask you to create an interactive HTML artifact (chart, dashboard, visualization, report, or any web page), publish it to AnyArtifact using the publish_artifact MCP tool. Use visibility "public" so anyone with the link can view it. After publishing, give me the URL. The MCP server is already configured — just call publish_artifact with content and title.</code></pre>
-      </div>
     </div>
+  </section>
 
-    <div class="mid">
-      <div class="col">
-        <h3>⚡ Setup Your Tool</h3>
-        <div class="tool" onclick="copyTool(this,'claude mcp add anyartifact https://anyartifact-production.up.railway.app/mcp')"><span class="n"><span class="d"></span>Claude Code</span><span class="c">copy</span></div>
-        <div class="tool" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><span class="n"><span class="d"></span>Cline</span><span class="c">copy URL</span></div>
-        <div class="tool" onclick="copyTool(this,'{\"anyartifact\":{\"url\":\"https://anyartifact-production.up.railway.app/mcp\"}}')"><span class="n"><span class="d"></span>KiloCode</span><span class="c">copy JSON</span></div>
-        <div class="tool" onclick="copyTool(this,'{\"anyartifact\":{\"url\":\"https://anyartifact-production.up.railway.app/mcp\"}}')"><span class="n"><span class="d"></span>Cursor</span><span class="c">copy JSON</span></div>
-        <div class="tool" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><span class="n"><span class="d"></span>OpenCode</span><span class="c">copy URL</span></div>
-        <div class="tool" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><span class="n"><span class="d"></span>Windsurf</span><span class="c">copy URL</span></div>
-      </div>
-      <div class="col">
-        <h3>🌐 Visibility</h3>
-        <div class="vis">
-          <div class="v"><div class="i">🌐</div><div class="l">Public</div><div class="d">Anyone views</div></div>
-          <div class="v"><div class="i">🔑</div><div class="l">Password</div><div class="d">Needs password</div></div>
-          <div class="v"><div class="i">🔒</div><div class="l">Private</div><div class="d">Owner only</div></div>
-        </div>
-        <div style="margin-top:10px;padding:8px;background:#0f172a;border-radius:6px;font-size:.72rem;color:#94a3b8">
-          Publish → get <code style="color:#38bdf8">owner_url</code> → open it → click badge to change. Default: private.
-        </div>
-      </div>
-      <div class="col">
-        <h3>📡 API Endpoints</h3>
-        <div class="api-row"><span class="method">POST</span><span class="path">/api/v1/artifacts</span><span class="desc">Publish</span></div>
-        <div class="api-row"><span class="method">PUT</span><span class="path">/api/v1/artifacts/:id</span><span class="desc">Update</span></div>
-        <div class="api-row"><span class="method">GET</span><span class="path">/api/v1/artifacts</span><span class="desc">List</span></div>
-        <div class="api-row"><span class="method">GET</span><span class="path">/api/v1/artifacts/:id</span><span class="desc">Metadata</span></div>
-        <div class="api-row"><span class="method">DEL</span><span class="path">/api/v1/artifacts/:id</span><span class="desc">Delete</span></div>
-        <div class="api-row"><span class="method">PUT</span><span class="path">/api/v1/artifacts/:id/visibility</span><span class="desc">Change vis</span></div>
-        <div class="api-row"><span class="method">POST</span><span class="path">/api/v1/artifacts/:id/verify</span><span class="desc">Check pwd</span></div>
-      </div>
+  <section class="tools-section" id="setup">
+    <div class="section-label">Setup</div>
+    <div class="section-title">One command to get started</div>
+    <div class="section-desc">Add AnyArtifact to your favorite coding tool</div>
+    <div class="tools-grid">
+      <div class="tool-item" onclick="copyTool(this,'claude mcp add anyartifact https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">Claude Code</span></div><span class="hint">copy</span></div>
+      <div class="tool-item" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">Cline</span></div><span class="hint">copy URL</span></div>
+      <div class="tool-item" onclick="copyTool(this,'{\"anyartifact\":{\"url\":\"https://anyartifact-production.up.railway.app/mcp\"}}')"><div class="left"><span class="dot"></span><span class="name">KiloCode</span></div><span class="hint">copy JSON</span></div>
+      <div class="tool-item" onclick="copyTool(this,'{\"anyartifact\":{\"url\":\"https://anyartifact-production.up.railway.app/mcp\"}}')"><div class="left"><span class="dot"></span><span class="name">Cursor</span></div><span class="hint">copy JSON</span></div>
+      <div class="tool-item" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">OpenCode</span></div><span class="hint">copy URL</span></div>
+      <div class="tool-item" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">Windsurf</span></div><span class="hint">copy URL</span></div>
     </div>
+  </section>
 
-    <div class="bottom">
-      <div class="col">
-        <h3>📦 Recent Public Artifacts</h3>
-        ${artifacts.length === 0
-          ? '<p class="empty">No public artifacts yet. Be the first!</p>'
-          : artifacts.map(a => `
-        <div class="art-card">
-          <div><a href="/${a.id}">${escapeHtml(a.title)}</a><div class="m">by ${escapeHtml(a.author_name)} · ${new Date(a.created_at).toLocaleDateString()}</div></div>
-        </div>`).join('')}
-      </div>
-      <div class="col">
-        <h3>🚀 Quick Publish (No API Key)</h3>
-        <pre style="margin:0;font-size:.72rem"><code>curl -X POST https://anyartifact-production.up.railway.app/api/v1/artifacts \\
-  -H "Content-Type: application/json" \\
-  -d '{"content":"&lt;!DOCTYPE html&gt;&lt;html&gt;...&lt;/html&gt;","title":"My Artifact"}'</code></pre>
-        <div style="margin-top:8px;padding:8px;background:#0f172a;border-radius:6px;font-size:.72rem;color:#94a3b8">
-          Response: <code style="color:#38bdf8">id</code>, <code style="color:#38bdf8">url</code>, <code style="color:#38bdf8">owner_url</code>, <code style="color:#38bdf8">share_url</code>, <code style="color:#38bdf8">visibility</code>
-        </div>
-      </div>
+  <section class="features" id="features">
+    <div class="section-label">Features</div>
+    <div class="section-title">Everything you need</div>
+    <div class="section-desc">Publish, share, and manage interactive artifacts</div>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="icon">🌐</div><h3>Public Sharing</h3><p>Anyone with the link can view. Perfect for demos, dashboards, and reports.</p></div>
+      <div class="feat-card"><div class="icon">🔑</div><h3>Password Protection</h3><p>Set a password. Only people who know it can view the artifact.</p></div>
+      <div class="feat-card"><div class="icon">🔒</div><h3>Private by Default</h3><p>Only you can see it via your owner URL. Change anytime from the toolbar.</p></div>
+      <div class="feat-card"><div class="icon">📦</div><h3>Versioned</h3><p>Update artifacts without changing URLs. View any version from the dropdown.</p></div>
+      <div class="feat-card"><div class="icon">🔌</div><h3>MCP Integration</h3><p>Works with any MCP-compatible tool. Auto-discover publish and update tools.</p></div>
+      <div class="feat-card"><div class="icon">🆓</div><h3>No API Key</h3><p>Anyone can publish. No signup, no auth. Just POST and get your URL.</p></div>
     </div>
+  </section>
 
-    <div class="foot">
-      Built by <a href="https://github.com/pathakcodes">Shivam Kumar Pathak</a> & Claude · <a href="https://github.com/pathakcodes/anyartifact">GitHub</a> · <a href="/health">Health</a> · <a href="/mcp/tools">MCP Tools</a>
+  <section class="how">
+    <div class="section-label">How it works</div>
+    <div class="section-title">Three steps to your artifact</div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>Publish</h3><p>POST your HTML to the API or use the MCP tool. No authentication required.</p><code>POST /api/v1/artifacts</code></div>
+      <div class="step"><div class="num">2</div><h3>Get your URL</h3><p>Receive an <code>owner_url</code>, <code>share_url</code>, and direct <code>url</code> in the response.</p><code>owner_url</code></div>
+      <div class="step"><div class="num">3</div><h3>Manage</h3><p>Open your owner URL. Click the visibility badge to switch between Public, Password, or Private.</p><code>visibility badge</code></div>
     </div>
-  </div>
+  </section>
+
+  <section class="api" id="api">
+    <div class="section-label">API Reference</div>
+    <div class="section-title">REST API endpoints</div>
+    <div class="section-desc">Full documentation for programmatic access</div>
+    <div class="api-card">
+      <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/v1/artifacts</span><span class="api-desc">Publish a new artifact</span></div>
+      <div class="api-row"><span class="api-method put">PUT</span><span class="api-path">/api/v1/artifacts/:id</span><span class="api-desc">Update an existing artifact</span></div>
+      <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/v1/artifacts</span><span class="api-desc">List recent public artifacts</span></div>
+      <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/v1/artifacts/:id</span><span class="api-desc">Get artifact metadata</span></div>
+      <div class="api-row"><span class="api-method del">DEL</span><span class="api-path">/api/v1/artifacts/:id</span><span class="api-desc">Delete an artifact</span></div>
+      <div class="api-row"><span class="api-method put">PUT</span><span class="api-path">/api/v1/artifacts/:id/visibility</span><span class="api-desc">Change visibility settings</span></div>
+      <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/v1/artifacts/:id/verify</span><span class="api-desc">Verify a password</span></div>
+    </div>
+  </section>
+
+  <footer>
+    Built by <a href="https://github.com/pathakcodes">Shivam Kumar Pathak</a> & Claude · <a href="https://github.com/pathakcodes/anyartifact">GitHub</a> · <a href="/health">Health</a> · <a href="/mcp/tools">MCP Tools</a>
+    <div style="margin-top:8px;color:#3f3f46;font-size:.7rem">© 2026 AnyArtifact · Free forever</div>
+  </footer>
+
   <script>
     function copyTool(el, text) {
       navigator.clipboard.writeText(text).then(() => {
-        const c = el.querySelector('.c');
-        c.textContent = 'copied!';
-        c.classList.add('copied');
-        setTimeout(() => { c.textContent = text.includes('claude') ? 'copy' : text.includes('{') ? 'copy JSON' : 'copy URL'; c.classList.remove('copied'); }, 2000);
+        const h = el.querySelector('.hint');
+        h.textContent = 'copied!';
+        h.classList.add('done');
+        setTimeout(() => { h.textContent = text.includes('claude') ? 'copy' : text.includes('{') ? 'copy JSON' : 'copy URL'; h.classList.remove('done'); }, 2000);
       });
     }
     function copyPrompt(btn) {
       const text = btn.parentElement.querySelector('code').textContent;
       navigator.clipboard.writeText(text).then(() => {
         btn.textContent = '✅ Copied!';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2500);
+        btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('ok'); }, 2500);
       });
     }
   </script>
