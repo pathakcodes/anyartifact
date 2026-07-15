@@ -812,7 +812,7 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
 
   <section class="hero">
     <div class="hero-content">
-      <h1>Publish AI-Generated<br>Web Pages Instantly</h1>
+      <h1>Publish Agent-Generated<br>Web Pages Instantly</h1>
       <p>Deploy dashboards, prototypes, and data visualizations directly from your AI agent workflow. No manual files, zero config hosting.</p>
       <div class="hero-btns">
         <button class="btn-primary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Integrate MCP</button>
