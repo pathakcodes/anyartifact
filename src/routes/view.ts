@@ -24,8 +24,7 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     ? artifacts.map((art: any) => {
         const dateStr = new Date(art.created_at).toLocaleDateString(undefined, {
           month: 'short',
-          day: 'numeric',
-          year: 'numeric'
+          day: 'numeric'
         });
         const title = escapeHtml(art.title || 'Untitled');
         const author = escapeHtml(art.author_name || 'Anonymous');
@@ -34,10 +33,9 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
         
         return `
           <div class="gallery-card" onclick="window.location.href='/${art.id}'">
-            <div class="card-glow"></div>
-            <div class="card-header">
-              <span class="card-icon">⚡</span>
+            <div class="card-meta">
               <span class="card-badge">HTML</span>
+              <span class="card-date">${dateStr}</span>
             </div>
             <h3 class="card-title">${title}</h3>
             <p class="card-desc">${desc}</p>
@@ -46,16 +44,15 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
                 <div class="author-avatar">${initials}</div>
                 <span class="author-name">${author}</span>
               </div>
-              <span class="card-date">${dateStr}</span>
+              <span class="card-action-text">Inspect →</span>
             </div>
           </div>
         `;
       }).join('')
     : `
       <div class="empty-state">
-        <div class="empty-icon">📂</div>
         <h3>No public artifacts yet</h3>
-        <p>Be the first to publish one by setting up your MCP server!</p>
+        <p>Be the first to publish one by setting up your MCP server.</p>
       </div>
     `;
 
@@ -67,79 +64,55 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AnyArtifact — Free AI Artifact Hosting</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     :root {
-      --bg-dark: #050508;
-      --bg-card: rgba(255, 255, 255, 0.02);
+      --bg-dark: #08080a;
       --border-color: rgba(255, 255, 255, 0.06);
       --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --primary: #6366f1;
-      --primary-glow: rgba(99, 102, 241, 0.15);
-      --accent: #a855f7;
-      --accent-cyan: #06b6d4;
+      --text-muted: #888896;
+      --primary: #5c5cff;
+      --primary-dim: rgba(92, 92, 255, 0.1);
     }
 
     body {
-      font-family: 'Outfit', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       background: var(--bg-dark);
       color: var(--text-main);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
       min-height: 100vh;
       background-image: 
-        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 50% -20%, rgba(92, 92, 255, 0.08) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.003) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.003) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
     }
 
     a { color: inherit; text-decoration: none; }
 
     /* SCROLLBAR */
-    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-dark); }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-
-    /* GLOW BACKGROUND EFFECT */
-    .glow-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: -1;
-      overflow: hidden;
-    }
-    .glow-light {
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      border-radius: 50%;
-      filter: blur(130px);
-      opacity: 0.15;
-    }
-    .glow-light-1 { top: -10%; left: 20%; background: var(--primary); }
-    .glow-light-2 { top: 40%; right: 10%; background: var(--accent); }
 
     /* NAV */
     nav {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(5, 5, 8, 0.75);
-      backdrop-filter: blur(20px);
+      background: rgba(8, 8, 10, 0.7);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-color);
-      transition: all 0.3s;
     }
     .nav-inner {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 2rem;
-      height: 70px;
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -147,382 +120,376 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     .nav-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-weight: 800;
-      font-size: 1.3rem;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #fff 40%, var(--text-muted) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
     }
     .nav-brand .logo {
-      width: 34px;
-      height: 34px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      border-radius: 10px;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       font-weight: bold;
-      -webkit-text-fill-color: initial;
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
     }
     .nav-links {
       display: flex;
-      gap: 2.5rem;
-      font-size: 0.95rem;
-      font-weight: 500;
+      gap: 2.25rem;
+      font-size: 0.88rem;
       color: var(--text-muted);
+      font-weight: 500;
     }
     .nav-links a {
-      transition: color 0.2s, transform 0.2s;
+      transition: color 0.15s;
     }
     .nav-links a:hover {
       color: #fff;
     }
     .nav-cta {
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 10px;
-      font-size: 0.9rem;
+      background: #fff;
+      color: #000;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
       border: none;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.2s;
     }
     .nav-cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+      opacity: 0.9;
     }
 
     /* HERO */
     .hero {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 6.5rem 2rem 4rem;
+      padding: 6rem 2rem 4rem;
       text-align: center;
-      position: relative;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      color: #818cf8;
-      padding: 6px 16px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 2rem;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.1);
-    }
-    .hero-badge .dot {
-      width: 6px;
-      height: 6px;
-      background: #818cf8;
-      border-radius: 50%;
-      animation: pulse-dot 1.5s infinite;
-    }
-    @keyframes pulse-dot {
-      0% { opacity: 0.3; transform: scale(0.9); }
-      50% { opacity: 1; transform: scale(1.2); }
-      100% { opacity: 0.3; transform: scale(0.9); }
     }
     .hero h1 {
-      font-size: 4rem;
+      font-size: 3.5rem;
       font-weight: 800;
       line-height: 1.15;
-      letter-spacing: -1.5px;
-      margin-bottom: 1.5rem;
-    }
-    .hero h1 span {
-      background: linear-gradient(135deg, #a855f7, #6366f1, #06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
+      color: #fff;
     }
     .hero p {
       color: var(--text-muted);
-      font-size: 1.25rem;
-      max-width: 650px;
-      margin: 0 auto 3rem;
-      line-height: 1.6;
+      font-size: 1.15rem;
+      max-width: 580px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.55;
     }
     .hero-btns {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       justify-content: center;
     }
     .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+      background: var(--primary);
       color: #fff;
-      padding: 14px 32px;
-      border-radius: 12px;
-      font-size: 0.95rem;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 0.9rem;
       font-weight: 600;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: background 0.2s;
     }
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5);
+      background: #4747e6;
     }
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.03);
+      background: transparent;
       color: var(--text-main);
-      padding: 14px 32px;
-      border-radius: 12px;
-      font-size: 0.95rem;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 0.9rem;
       font-weight: 500;
       border: 1px solid var(--border-color);
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s;
     }
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.15);
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.12);
     }
 
-    /* TABS SETUP SECTION */
+    /* SAMPLE PROMPT MARQUEE RIBBON */
+    .prompt-ribbon-container {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.01);
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.65rem 0;
+      width: 100vw;
+      position: relative;
+      left: 50%;
+      right: 50%;
+      margin-left: -50vw;
+      margin-right: -50vw;
+      overflow: hidden;
+      margin-bottom: 4rem;
+    }
+    .prompt-ribbon-inner {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      width: 100%;
+    }
+    .prompt-ribbon-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--primary-dim);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(92, 92, 255, 0.2);
+      margin-right: 2rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .prompt-ribbon {
+      display: flex;
+      overflow: hidden;
+      width: 100%;
+    }
+    .prompt-track {
+      display: flex;
+      gap: 3.5rem;
+      white-space: nowrap;
+      animation: marquee 35s linear infinite;
+    }
+    .prompt-track span {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .prompt-track span:hover {
+      color: #fff;
+    }
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* SETUP TERMINAL MOCKUP */
     .setup-section {
-      max-width: 900px;
-      margin: 2rem auto 6rem;
+      max-width: 1000px;
+      margin: 0 auto 6rem;
       padding: 0 2rem;
     }
-    .setup-card {
-      background: rgba(10, 10, 15, 0.6);
-      backdrop-filter: blur(16px);
+    .console-window {
+      background: #0d0d11;
       border: 1px solid var(--border-color);
-      border-radius: 24px;
-      padding: 2.5rem;
-      position: relative;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-    }
-    .setup-card .card-label {
-      position: absolute;
-      top: -12px;
-      left: 30px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
-      padding: 4px 16px;
       border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
-    .setup-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 2rem;
+    .console-header {
+      background: rgba(255,255,255,0.02);
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 1rem;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+    }
+    .console-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .console-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+    }
+    .console-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .console-tabs {
+      display: flex;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--border-color);
       overflow-x: auto;
     }
-    .setup-tab {
+    .console-tab {
       background: transparent;
       border: none;
+      border-right: 1px solid var(--border-color);
       color: var(--text-muted);
-      padding: 8px 18px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      border-radius: 8px;
+      padding: 10px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
+      transition: all 0.15s;
     }
-    .setup-tab:hover {
+    .console-tab:hover {
       color: #fff;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255,255,255,0.02);
     }
-    .setup-tab.active {
+    .console-tab.active {
       color: #fff;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.25);
+      background: #0d0d11;
+      border-bottom: 1px solid #0d0d11;
+      margin-bottom: -1px;
+    }
+    .console-body {
+      padding: 1.5rem;
     }
     .tab-content {
       display: none;
-      animation: fadeIn 0.4s ease;
+      animation: tabFade 0.3s ease;
     }
     .tab-content.active {
       display: block;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
+    @keyframes tabFade {
+      from { opacity: 0; transform: translateY(2px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .setup-item-desc {
+    .setup-desc {
+      font-size: 0.88rem;
       color: var(--text-muted);
-      font-size: 0.9rem;
       margin-bottom: 1rem;
     }
-    .setup-cmd-container {
+    .code-container {
       position: relative;
-      margin-bottom: 1.5rem;
     }
-    .setup-cmd-container pre {
+    .code-container pre {
       background: #060608;
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 8px;
       padding: 1.25rem;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: #e2e8f0;
-      line-height: 1.7;
+      line-height: 1.6;
       overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
     }
-    .setup-cmd-container .btn-copy {
+    .btn-copy {
       position: absolute;
       top: 12px;
       right: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
       color: var(--text-muted);
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: inherit;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .setup-cmd-container .btn-copy:hover {
+    .btn-copy:hover {
       background: rgba(255, 255, 255, 0.1);
       color: #fff;
     }
-    .setup-cmd-container .btn-copy.copied {
+    .btn-copy.copied {
       background: #10b981;
       border-color: #10b981;
       color: #000;
     }
-    
-    .hint {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+
+    /* GRID / DIRECTORY SECTIONS */
+    .section-title-wrapper {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+    .section-label-minimal {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .section-title-minimal {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
-    /* GALLERY / PUBLIC ARTIFACTS */
+    /* GALLERY CARDS */
     .gallery-section {
       max-width: 1200px;
       margin: 0 auto 6rem;
       padding: 0 2rem;
     }
-    .section-header {
-      text-align: center;
-      margin-bottom: 3.5rem;
-    }
-    .section-label {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--primary);
-      margin-bottom: 0.5rem;
-      display: block;
-    }
-    .section-title {
-      font-size: 2.2rem;
-      font-weight: 800;
-      letter-spacing: -0.75px;
-      margin-bottom: 0.75rem;
-    }
-    .section-desc {
-      color: var(--text-muted);
-      font-size: 1rem;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 20px;
+      gap: 16px;
     }
     .gallery-card {
-      background: var(--bg-card);
+      background: rgba(255, 255, 255, 0.015);
       border: 1px solid var(--border-color);
-      border-radius: 18px;
-      padding: 1.75rem;
+      border-radius: 10px;
+      padding: 1.5rem;
       cursor: pointer;
-      position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 220px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      height: 200px;
+      transition: border-color 0.2s, background-color 0.2s;
     }
     .gallery-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(99, 102, 241, 0.3);
-      box-shadow: 0 12px 30px rgba(99, 102, 241, 0.1);
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.025);
     }
-    .gallery-card:hover .card-glow {
-      opacity: 0.15;
-    }
-    .card-glow {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(circle at 50% 0%, var(--primary), transparent 60%);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-    .card-header {
+    .card-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-    }
-    .card-icon {
-      font-size: 1.25rem;
-      background: rgba(255, 255, 255, 0.05);
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin-bottom: 1rem;
     }
     .card-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--primary);
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      padding: 3px 10px;
-      border-radius: 8px;
+      font-size: 0.68rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .card-date {
+      font-size: 0.72rem;
+      color: var(--text-muted);
     }
     .card-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
       color: #fff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .card-desc {
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 1.5rem;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -533,59 +500,44 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-top: 1px solid rgba(255, 255, 255, 0.04);
-      padding-top: 0.8rem;
-    }
-    .author-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
     .author-avatar {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+      background: rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.65rem;
-      font-weight: bold;
+      font-size: 0.62rem;
+      font-weight: 700;
       color: #fff;
     }
     .author-name {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       font-weight: 500;
     }
-    .card-date {
+    .card-action-text {
       font-size: 0.78rem;
-      color: var(--text-muted);
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .gallery-card:hover .card-action-text {
+      color: #8585ff;
     }
     
     .empty-state {
       grid-column: 1 / -1;
       text-align: center;
       padding: 4rem 2rem;
-      background: var(--bg-card);
       border: 1px dashed var(--border-color);
-      border-radius: 20px;
+      border-radius: 10px;
     }
-    .empty-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-    .empty-state h3 {
-      font-size: 1.15rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-    .empty-state p {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
+    .empty-state h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .empty-state p { color: var(--text-muted); font-size: 0.82rem; }
 
-    /* FEATURES SECTION */
+    /* CORE FEATURES LIST */
     .features-section {
       max-width: 1200px;
       margin: 0 auto 6rem;
@@ -593,131 +545,137 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     }
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
     }
     .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 2rem;
-      transition: all 0.3s;
+      background: #08080a;
+      padding: 2.25rem 2rem;
     }
-    .feature-card:hover {
-      border-color: rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.03);
-    }
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
+    .feature-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
       color: var(--primary);
       margin-bottom: 1.25rem;
+      display: block;
     }
     .feature-card h3 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.65rem;
+      color: #fff;
     }
     .feature-card p {
       color: var(--text-muted);
-      font-size: 0.92rem;
-      line-height: 1.6;
+      font-size: 0.88rem;
+      line-height: 1.55;
     }
 
-    /* API TABLE SECTION */
+    /* API PATHS Minimalist list */
     .api-section {
       max-width: 1000px;
       margin: 0 auto 6rem;
       padding: 0 2rem;
     }
-    .api-card {
-      background: var(--bg-card);
+    .api-list {
       border: 1px solid var(--border-color);
-      border-radius: 24px;
+      border-radius: 12px;
       overflow: hidden;
+      background: rgba(255,255,255,0.005);
     }
-    .api-table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
-    .api-table th {
-      padding: 1.25rem 1.5rem;
+    .api-row {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.5rem;
       border-bottom: 1px solid var(--border-color);
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      font-weight: 600;
     }
-    .api-table td {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-      font-size: 0.9rem;
-    }
-    .api-table tr:last-child td { border: none; }
+    .api-row:last-child { border: none; }
     .method-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 6px;
-      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      width: 60px;
+      text-align: center;
     }
-    .method-badge.post { background: rgba(16, 185, 129, 0.12); color: #10b981; }
-    .method-badge.put { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
-    .method-badge.get { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
-    .method-badge.del { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .method-badge.post { background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); }
+    .method-badge.put { background: rgba(245, 158, 11, 0.08); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.15); }
+    .method-badge.get { background: rgba(59, 130, 246, 0.08); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.15); }
+    .method-badge.del { background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15); }
     .api-path {
       font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      margin-left: 1.5rem;
+      flex: 1;
+    }
+    .api-desc {
       font-size: 0.85rem;
-      color: var(--accent-cyan);
+      color: var(--text-muted);
     }
 
     /* FOOTER */
     footer {
       border-top: 1px solid var(--border-color);
-      padding: 3.5rem 2rem;
+      padding: 4rem 2rem;
       text-align: center;
       color: var(--text-muted);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
     footer a {
-      color: #fff;
-      transition: opacity 0.2s;
+      color: var(--text-muted);
+      transition: color 0.15s;
     }
-    footer a:hover { opacity: 0.8; }
-    .footer-divider {
-      margin: 1.5rem 0;
-      opacity: 0.1;
-      border-color: #fff;
+    footer a:hover { color: #fff; }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1rem 0;
+    }
+
+    /* TOAST STYLE ON LANDING PAGE */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #fff;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 200;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     @media (max-width: 768px) {
-      .hero h1 { font-size: 2.5rem; }
+      .hero h1 { font-size: 2.25rem; }
       .nav-links { display: none; }
-      .setup-card { padding: 1.5rem; }
+      .api-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .api-path { margin-left: 0; }
     }
   </style>
 </head>
 <body>
-  <div class="glow-container">
-    <div class="glow-light glow-light-1"></div>
-    <div class="glow-light glow-light-2"></div>
-  </div>
-
   <nav>
     <div class="nav-inner">
       <div class="nav-brand"><div class="logo">⚡</div>AnyArtifact</div>
       <div class="nav-links">
-        <a href="#setup">Integrate</a>
-        <a href="#gallery">Recent Artifacts</a>
+        <a href="#setup">Setup</a>
+        <a href="#gallery">Gallery</a>
         <a href="#features">Features</a>
         <a href="#api">API</a>
         <a href="https://github.com/pathakcodes/anyartifact" target="_blank">GitHub</a>
@@ -727,120 +685,141 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
   </nav>
 
   <section class="hero">
-    <div class="hero-badge">
-      <span class="dot"></span>
-      ⚡ Open Source & Free Forever
-    </div>
-    <h1>Deploy AI-Generated<br><span>Interactive Artifacts</span></h1>
-    <p>Host dashboards, charts, visualizations, and static pages directly from Claude Code, Cursor, Cline, or any agent. No signup, zero fees.</p>
+    <h1>Publish AI-Generated<br>Web Pages Instantly</h1>
+    <p>Deploy dashboards, prototypes, and data visualizations directly from your AI agent workflow. No manual files, zero config hosting.</p>
     <div class="hero-btns">
-      <button class="btn-primary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Add to Agent</button>
-      <a href="https://github.com/pathakcodes/anyartifact" target="_blank" class="btn-secondary">View on GitHub</a>
+      <button class="btn-primary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Integrate MCP</button>
+      <a href="https://github.com/pathakcodes/anyartifact" target="_blank" class="btn-secondary">View Repository</a>
     </div>
   </section>
 
+  <!-- PROMPT RIBBON -->
+  <div class="prompt-ribbon-container">
+    <div class="prompt-ribbon-inner">
+      <div class="prompt-ribbon-label">Interactive Prompts</div>
+      <div class="prompt-ribbon">
+        <div class="prompt-track" id="promptTrack">
+          <!-- Duplicated list for marquee -->
+          <span onclick="copyPromptText(this)">"publish to anyartifact about mars telemetry dashboard"</span>
+          <span onclick="copyPromptText(this)">"create an interactive canvas paint app and upload it"</span>
+          <span onclick="copyPromptText(this)">"build a solar system gravity physics simulator in html"</span>
+          <span onclick="copyPromptText(this)">"design a responsive climate chart board with chartjs"</span>
+          <span onclick="copyPromptText(this)">"generate a sleek markdown editor tool with real-time preview"</span>
+          
+          <span onclick="copyPromptText(this)">"publish to anyartifact about mars telemetry dashboard"</span>
+          <span onclick="copyPromptText(this)">"create an interactive canvas paint app and upload it"</span>
+          <span onclick="copyPromptText(this)">"build a solar system gravity physics simulator in html"</span>
+          <span onclick="copyPromptText(this)">"design a responsive climate chart board with chartjs"</span>
+          <span onclick="copyPromptText(this)">"generate a sleek markdown editor tool with real-time preview"</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <section class="setup-section" id="setup">
-    <div class="setup-card">
-      <div class="card-label">STEP 1 — CHOOSE YOUR CODESPACE</div>
+    <div class="section-title-wrapper">
+      <span class="section-label-minimal">01 / Connection</span>
+      <h2 class="section-title-minimal">Integrate your agent</h2>
+    </div>
+    
+    <div class="console-window">
+      <div class="console-header">
+        <div class="console-dots">
+          <div class="console-dot"></div>
+          <div class="console-dot"></div>
+          <div class="console-dot"></div>
+        </div>
+        <div class="console-title">anyartifact-mcp-config</div>
+        <div></div>
+      </div>
       
-      <div class="setup-tabs">
-        <button class="setup-tab active" onclick="switchTab(event, 'tab-claude')">Claude Code</button>
-        <button class="setup-tab" onclick="switchTab(event, 'tab-cursor')">Cursor / Windsurf</button>
-        <button class="setup-tab" onclick="switchTab(event, 'tab-cline')">Cline</button>
-        <button class="setup-tab" onclick="switchTab(event, 'tab-claude-desk')">Claude Desktop</button>
-        <button class="setup-tab" onclick="switchTab(event, 'tab-opencode')">OpenCode</button>
+      <div class="console-tabs">
+        <button class="console-tab active" onclick="switchTab(event, 'tab-claude')">Claude Code</button>
+        <button class="console-tab" onclick="switchTab(event, 'tab-cursor')">Cursor / Windsurf</button>
+        <button class="console-tab" onclick="switchTab(event, 'tab-cline')">Cline</button>
+        <button class="console-tab" onclick="switchTab(event, 'tab-claude-desk')">Claude Desktop</button>
       </div>
 
-      <!-- Tab: Claude Code -->
-      <div id="tab-claude" class="tab-content active">
-        <p class="setup-item-desc">Run this command in your project terminal to automatically connect AnyArtifact to Claude Code.</p>
-        <div class="setup-cmd-container">
-          <pre><code>claude mcp add --transport sse anyartifact ${origin}/mcp</code></pre>
-          <button class="btn-copy" onclick="copyCode(this)">copy</button>
+      <div class="console-body">
+        <!-- Tab: Claude Code -->
+        <div id="tab-claude" class="tab-content active">
+          <p class="setup-desc">Execute this command in your project workspace terminal.</p>
+          <div class="code-container">
+            <pre><code>claude mcp add --transport sse anyartifact ${origin}/mcp</code></pre>
+            <button class="btn-copy" onclick="copyCode(this)">copy</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Tab: Cursor -->
-      <div id="tab-cursor" class="tab-content">
-        <p class="setup-item-desc">Add AnyArtifact as a new MCP server in Cursor/Windsurf settings.</p>
-        <div class="setup-cmd-container">
-          <pre><code>${origin}/mcp</code></pre>
-          <button class="btn-copy" onclick="copyCode(this)">copy URL</button>
+        <!-- Tab: Cursor -->
+        <div id="tab-cursor" class="tab-content">
+          <p class="setup-desc">Add as an SSE MCP Server in Cursor/Windsurf settings.</p>
+          <div class="code-container">
+            <pre><code>${origin}/mcp</code></pre>
+            <button class="btn-copy" onclick="copyCode(this)">copy URL</button>
+          </div>
         </div>
-        <div class="hint">ℹ️ Go to Settings > Features > MCP, select SSE transport, and paste the URL.</div>
-      </div>
 
-      <!-- Tab: Cline -->
-      <div id="tab-cline" class="tab-content">
-        <p class="setup-item-desc">Enable Cline to use the AnyArtifact publish tools by registering this MCP server URL.</p>
-        <div class="setup-cmd-container">
-          <pre><code>${origin}/mcp</code></pre>
-          <button class="btn-copy" onclick="copyCode(this)">copy URL</button>
+        <!-- Tab: Cline -->
+        <div id="tab-cline" class="tab-content">
+          <p class="setup-desc">Register this endpoint as a remote SSE MCP provider in Cline.</p>
+          <div class="code-container">
+            <pre><code>${origin}/mcp</code></pre>
+            <button class="btn-copy" onclick="copyCode(this)">copy URL</button>
+          </div>
         </div>
-        <div class="hint">ℹ️ Set as an SSE provider in your Cline settings page.</div>
-      </div>
 
-      <!-- Tab: Claude Desktop -->
-      <div id="tab-claude-desk" class="tab-content">
-        <p class="setup-item-desc">Add this snippet to your Claude Desktop config JSON file.</p>
-        <div class="setup-cmd-container">
-          <pre><code>{
+        <!-- Tab: Claude Desktop -->
+        <div id="tab-claude-desk" class="tab-content">
+          <p class="setup-desc">Append this server configuration block inside <code>claude_desktop_config.json</code>.</p>
+          <div class="code-container">
+            <pre><code>{
   "mcpServers": {
     "anyartifact": {
       "url": "${origin}/mcp"
     }
   }
 }</code></pre>
-          <button class="btn-copy" onclick="copyCode(this)">copy JSON</button>
+            <button class="btn-copy" onclick="copyCode(this)">copy JSON</button>
+          </div>
         </div>
-        <p class="hint">📁 Located at: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS</p>
-      </div>
-
-      <!-- Tab: OpenCode -->
-      <div id="tab-opencode" class="tab-content">
-        <p class="setup-item-desc">Paste this inside your local opencode JSON configuration file.</p>
-        <div class="setup-cmd-container">
-          <pre><code>{
-  "mcp": {
-    "anyartifact": {
-      "type": "remote",
-      "url": "${origin}/mcp",
-      "enabled": true
-    }
-  }
-}</code></pre>
-          <button class="btn-copy" onclick="copyCode(this)">copy JSON</button>
-        </div>
-        <p class="hint">📁 Config path: <code>~/.config/opencode/opencode.json</code></p>
       </div>
     </div>
 
-    <div class="setup-card" style="margin-top: 2rem">
-      <div class="card-label">STEP 2 — ADD AN AGENT RULE</div>
-      <p class="setup-item-desc" style="margin-bottom: 1.5rem">Provide this instruction to your AI agent in your prompt or <code>.cursorrules</code> / <code>.clinerules</code> file so it knows how to upload pages automatically.</p>
-      <div class="setup-cmd-container">
-        <pre><code>## AnyArtifact Integration
+    <div class="console-window" style="margin-top: 2rem">
+      <div class="console-header">
+        <div class="console-dots">
+          <div class="console-dot"></div>
+          <div class="console-dot"></div>
+          <div class="console-dot"></div>
+        </div>
+        <div class="console-title">.cursorrules / .clinerules</div>
+        <div></div>
+      </div>
+      <div class="console-body">
+        <p class="setup-desc">Save this project instruction rule so the agent publishes pages autonomously.</p>
+        <div class="code-container">
+          <pre><code>## AnyArtifact Integration
 
-When creating interactive HTML artifacts (charts, dashboards, visualizations, reports, or web apps), use the AnyArtifact MCP tools to publish them.
+When creating interactive HTML artifacts (charts, dashboards, visualizations, reports, or web pages), use the AnyArtifact MCP tools to publish them.
 
 MCP Server: ${origin}/mcp
 Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
 
 Workflow:
 1. Generate the HTML content.
-2. Call publish_artifact with the code and title.
+2. Call publish_artifact with the code content and title.
 3. Use visibility "public" so the user can inspect it.
-4. Provide the returned URL link to the user.</code></pre>
-        <button class="btn-copy" onclick="copyCode(this)">📋 Copy Rule</button>
+4. Provide the returned URL link back to the user.</code></pre>
+          <button class="btn-copy" onclick="copyCode(this)">📋 Copy Rule</button>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="gallery-section" id="gallery">
-    <div class="section-header">
-      <span class="section-label">Gallery</span>
-      <h2 class="section-title">Recent Public Artifacts</h2>
-      <p class="section-desc">Browse community creations generated by AI agents around the world.</p>
+    <div class="section-title-wrapper">
+      <span class="section-label-minimal">02 / Showcase</span>
+      <h2 class="section-title-minimal">Recent Artifacts</h2>
     </div>
     <div class="gallery-grid">
       ${cardsHtml}
@@ -848,110 +827,77 @@ Workflow:
   </section>
 
   <section class="features-section" id="features">
-    <div class="section-header">
-      <span class="section-label">Capabilities</span>
-      <h2 class="section-title">Everything you need</h2>
-      <p class="section-desc">Host pages seamlessly with zero complex cloud setups.</p>
+    <div class="section-title-wrapper">
+      <span class="section-label-minimal">03 / Platform</span>
+      <h2 class="section-title-minimal">Core features</h2>
     </div>
     <div class="features-grid">
       <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <h3>Public Sharing</h3>
-        <p>Generate a unique URL instantly. Anyone with the URL can inspect the visual pages, dashboards, or prototypes.</p>
+        <span class="feature-num">// 01</span>
+        <h3>Public & Private Visibility</h3>
+        <p>Keep your pages private, password-protect them, or open them for public sharing with the community from a single toggle.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🔑</div>
-        <h3>Password Protection</h3>
-        <p>Limit access by securing your pages with custom passwords. Keep sensitive charts or layouts hidden.</p>
+        <span class="feature-num">// 02</span>
+        <h3>Instant MCP Discovery</h3>
+        <p>Integrates natively with the Model Context Protocol (MCP) tool chain, giving agents direct API capabilities to push and update layouts.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <h3>Private by Default</h3>
-        <p>Only you can view and modify details via your unique Owner URL. Easily manage visibility settings from the toolbar.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📦</div>
-        <h3>Version History</h3>
-        <p>Keep your sharing link consistent. Agent updates generate new versions you can switch between dynamically.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔌</div>
-        <h3>Native MCP Support</h3>
-        <p>Compliant with the Model Context Protocol. Works instantly out of the box with any compatible IDE extension.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🆓</div>
-        <h3>Free & Zero API Key</h3>
-        <p>Host web files without signing up or dealing with secret keys. The ideal companion for developers and AI pairings.</p>
+        <span class="feature-num">// 03</span>
+        <h3>Automatic Versions</h3>
+        <p>Agents can overwrite existing pages, building a history of iterations. View older page states easily with the top version selector.</p>
       </div>
     </div>
   </section>
 
   <section class="api-section" id="api">
-    <div class="section-header">
-      <span class="section-label">REST API</span>
-      <h2 class="section-title">Developer Reference</h2>
-      <p class="section-desc">Connect programmatically via REST API integrations.</p>
+    <div class="section-title-wrapper">
+      <span class="section-label-minimal">04 / Specifications</span>
+      <h2 class="section-title-minimal">API Reference</h2>
     </div>
-    <div class="api-card">
-      <table class="api-table">
-        <thead>
-          <tr>
-            <th>Method</th>
-            <th>Endpoint</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="method-badge post">POST</span></td>
-            <td><span class="api-path">/api/v1/artifacts</span></td>
-            <td>Publish a new HTML artifact</td>
-          </tr>
-          <tr>
-            <td><span class="method-badge put">PUT</span></td>
-            <td><span class="api-path">/api/v1/artifacts/:id</span></td>
-            <td>Upload a new version for an artifact</td>
-          </tr>
-          <tr>
-            <td><span class="method-badge get">GET</span></td>
-            <td><span class="api-path">/api/v1/artifacts</span></td>
-            <td>List recent public artifacts</td>
-          </tr>
-          <tr>
-            <td><span class="method-badge get">GET</span></td>
-            <td><span class="api-path">/api/v1/artifacts/:id</span></td>
-            <td>Fetch artifact metadata and version details</td>
-          </tr>
-          <tr>
-            <td><span class="method-badge del">DELETE</span></td>
-            <td><span class="api-path">/api/v1/artifacts/:id</span></td>
-            <td>Permanently delete an artifact</td>
-          </tr>
-          <tr>
-            <td><span class="method-badge put">PUT</span></td>
-            <td><span class="api-path">/api/v1/artifacts/:id/visibility</span></td>
-            <td>Update visibility type (public, private, password)</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="api-list">
+      <div class="api-row">
+        <span class="method-badge post">POST</span>
+        <span class="api-path">/api/v1/artifacts</span>
+        <span class="api-desc">Create a new HTML page</span>
+      </div>
+      <div class="api-row">
+        <span class="method-badge put">PUT</span>
+        <span class="api-path">/api/v1/artifacts/:id</span>
+        <span class="api-desc">Add a new version to the page</span>
+      </div>
+      <div class="api-row">
+        <span class="method-badge get">GET</span>
+        <span class="api-path">/api/v1/artifacts</span>
+        <span class="api-desc">Retrieve recent public pages</span>
+      </div>
+      <div class="api-row">
+        <span class="method-badge get">GET</span>
+        <span class="api-path">/api/v1/artifacts/:id</span>
+        <span class="api-desc">Get page details & metadata</span>
+      </div>
+      <div class="api-row">
+        <span class="method-badge del">DELETE</span>
+        <span class="api-path">/api/v1/artifacts/:id</span>
+        <span class="api-desc">Delete a page permanently</span>
+      </div>
     </div>
   </section>
 
   <footer>
-    <p>Built with ❤️ for AI developers · Powered by Hono & sql.js</p>
-    <hr class="footer-divider">
-    <div>
+    <div class="footer-links">
       <a href="https://github.com/pathakcodes/anyartifact" target="_blank">GitHub</a> · 
-      <a href="/health">System Health</a> · 
+      <a href="/health">Health Status</a> · 
       <a href="/mcp/tools">MCP Tools</a>
     </div>
-    <p style="margin-top: 1rem; color: #52525b; font-size: 0.8rem;">© 2026 AnyArtifact · Free Forever</p>
+    <p>© 2026 AnyArtifact · Built with Hono & sql.js</p>
   </footer>
+
+  <div class="toast" id="toast">Copied to clipboard!</div>
 
   <script>
     function switchTab(e, tabId) {
-      document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.console-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       e.target.classList.add('active');
       document.getElementById(tabId).classList.add('active');
@@ -960,19 +906,29 @@ Workflow:
     function copyCode(btn) {
       const code = btn.parentElement.querySelector('code').textContent;
       navigator.clipboard.writeText(code).then(() => {
+        const origText = btn.textContent;
         btn.textContent = 'copied!';
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.textContent = btn.dataset.label || 'copy';
+          btn.textContent = origText;
           btn.classList.remove('copied');
         }, 2000);
       });
     }
 
-    // Keep initial copy button labels
-    document.querySelectorAll('.btn-copy').forEach(btn => {
-      btn.dataset.label = btn.textContent;
-    });
+    function copyPromptText(span) {
+      const text = span.textContent.replace(/"/g, '');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied prompt: ' + text);
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
   </script>
 </body>
 </html>
@@ -1096,9 +1052,8 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     : `<option value="${version}" selected>v${version}</option>`;
 
   const vis = artifact.visibility || 'public';
-  const visColor = vis === 'private' ? '#ef4444' : vis === 'password' ? '#f59e0b' : '#10b981';
-  const visIcon = vis === 'private' ? '🔒' : vis === 'password' ? '🔑' : '🌐';
-  const visLabel = vis === 'private' ? 'Private' : vis === 'password' ? 'Password' : 'Public';
+  const visColor = vis === 'private' ? '#ef4444' : vis === 'password' ? '#f59e0b' : '#3b82f6';
+  const visLabel = vis === 'private' ? 'Private' : vis === 'password' ? 'Password Protected' : 'Public Link';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1107,13 +1062,13 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(artifact.title)} - AnyArtifact</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Outfit', system-ui, sans-serif;
-      background: #0d0d12;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #09090b;
       color: #fff;
       height: 100vh;
       display: flex;
@@ -1126,25 +1081,25 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 64px;
+      height: 56px;
       padding: 0 1.25rem;
-      background: rgba(18, 18, 24, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: #0d0d11;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       z-index: 100;
     }
     .toolbar-left {
       display: flex;
       align-items: center;
       gap: 12px;
+      max-width: 30%;
     }
     .btn-back {
-      background: rgba(255, 255, 255, 0.05);
+      background: transparent;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #9ca3af;
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      color: #888896;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1152,86 +1107,82 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       transition: all 0.2s;
     }
     .btn-back:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
       color: #fff;
+      border-color: rgba(255,255,255,0.15);
     }
     .toolbar h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
+      font-size: 0.9rem;
+      font-weight: 600;
       color: #fff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 250px;
     }
 
     /* VIEWPORT SIMULATOR */
     .viewport-controls {
       display: flex;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 3px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: rgba(255,255,255,0.02);
+      padding: 2px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
     .viewport-btn {
       background: transparent;
       border: none;
-      color: #6b7280;
-      padding: 6px 14px;
-      border-radius: 7px;
+      color: #888896;
+      padding: 5px 12px;
+      border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
+      font-size: 0.78rem;
+      font-weight: 500;
       font-family: inherit;
-      transition: all 0.2s;
+      transition: all 0.15s;
     }
     .viewport-btn svg {
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       fill: currentColor;
     }
     .viewport-btn:hover {
       color: #fff;
     }
     .viewport-btn.active {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
       color: #fff;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     .toolbar-right {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 0.85rem;
-      color: #9ca3af;
+      font-size: 0.8rem;
+      color: #888896;
     }
     
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .meta-item b {
+      color: #fff;
     }
 
     /* SELECT DROPDOWN */
     .toolbar select {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.02);
       color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      font-weight: 500;
       cursor: pointer;
       font-family: inherit;
       outline: none;
-      transition: all 0.2s;
     }
     .toolbar select:hover {
-      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255,255,255,0.15);
     }
 
     /* VISIBILITY DROPDOWN */
@@ -1239,122 +1190,108 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       position: relative;
     }
     .vis-btn {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.02);
       color: #fff;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 500;
       cursor: pointer;
       border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       gap: 6px;
       font-family: inherit;
-      transition: all 0.2s;
     }
     .vis-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255,255,255,0.15);
     }
     .vis-status-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       background: ${visColor};
       border-radius: 50%;
-      box-shadow: 0 0 10px ${visColor};
     }
     .vis-dropdown {
       display: none;
       position: absolute;
       top: 100%;
       right: 0;
-      margin-top: 10px;
-      background: #181822;
+      margin-top: 8px;
+      background: #0d0d11;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 6px;
-      min-width: 240px;
+      border-radius: 8px;
+      padding: 4px;
+      min-width: 220px;
       z-index: 100;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-      animation: dropdown-fade 0.2s ease;
-    }
-    @keyframes dropdown-fade {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
     .vis-dropdown.show { display: block; }
     .vis-option {
-      padding: 10px 14px;
+      padding: 8px 12px;
       cursor: pointer;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      flex-direction: column;
+      border-radius: 6px;
+      font-size: 0.8rem;
       transition: background 0.15s;
     }
     .vis-option:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.02);
     }
     .vis-option.active {
-      background: rgba(99, 102, 241, 0.1);
-      color: #818cf8;
+      color: var(--primary);
     }
-    .vis-option .icon { font-size: 1.1rem; }
     .vis-option .title { font-weight: 600; }
-    .vis-option .desc { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
+    .vis-option .desc { font-size: 0.7rem; color: #52525b; margin-top: 1px; }
     
     .pwd-section {
-      padding: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
       display: none;
     }
     .pwd-section.show { display: block; }
     .pwd-section input {
       width: 100%;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
       color: #fff;
-      font-size: 0.82rem;
-      margin-bottom: 8px;
+      font-size: 0.78rem;
+      margin-bottom: 6px;
       outline: none;
-    }
-    .pwd-section input:focus {
-      border-color: rgba(99, 102, 241, 0.4);
     }
     .pwd-section button {
       width: 100%;
-      padding: 8px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
+      padding: 6px;
+      background: #fff;
+      color: #000;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       font-weight: 600;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-family: inherit;
     }
 
     /* ACTION BUTTONS */
     .btn-action {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.02);
       color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 500;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
       font-family: inherit;
-      transition: all 0.2s;
     }
     .btn-action:hover {
-      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255,255,255,0.15);
     }
     .btn-action.copied {
       background: #10b981;
@@ -1363,18 +1300,18 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     }
 
     .link-raw {
-      color: #3b82f6;
+      color: var(--primary);
       text-decoration: none;
-      font-weight: 600;
-      transition: color 0.2s;
+      font-weight: 500;
+      transition: color 0.15s;
     }
-    .link-raw:hover { color: #60a5fa; }
+    .link-raw:hover { color: #8585ff; }
 
     /* IFRAME FRAME CONTAINER */
     .frame-wrapper {
       flex: 1;
       width: 100%;
-      background: #0b0b0e;
+      background: #050507;
       display: flex;
       justify-content: center;
       align-items: stretch;
@@ -1384,10 +1321,10 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     .artifact-frame {
       width: 100%;
       height: 100%;
-      border: none;
+      border: 1px solid rgba(255,255,255,0.03);
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -1396,17 +1333,17 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: #10b981;
+      background: #fff;
       color: #000;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-size: 0.88rem;
-      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
       opacity: 0;
       transform: translateY(10px);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 200;
-      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.2);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
     }
     .toast.show {
       opacity: 1;
@@ -1415,7 +1352,6 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     .toast.error {
       background: #ef4444;
       color: #fff;
-      box-shadow: 0 8px 30px rgba(239, 68, 68, 0.2);
     }
 
     @media (max-width: 768px) {
@@ -1428,7 +1364,7 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
   <div class="toolbar">
     <div class="toolbar-left">
       <button class="btn-back" onclick="window.location.href='/'" title="Back to Gallery">
-        <svg style="width:16px;height:16px" viewBox="0 0 24 24"><path fill="currentColor" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/></svg>
+        <svg style="width:14px;height:14px" viewBox="0 0 24 24"><path fill="currentColor" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/></svg>
       </button>
       <h1>${escapeHtml(artifact.title)}</h1>
     </div>
@@ -1454,30 +1390,30 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       <div class="vis-container">
         <button class="vis-btn" onclick="toggleVisDropdown()">
           <span class="vis-status-dot"></span>
-          ${visIcon} ${visLabel}
+          ${visLabel}
         </button>
         <div class="vis-dropdown" id="visDropdown">
           <div class="vis-option ${vis === 'public' ? 'active' : ''}" onclick="changeVis('public')">
-            <span class="icon">🌐</span>
-            <div><div class="title">Public</div><div class="desc">Anyone with link can inspect</div></div>
+            <span class="title">Public</span>
+            <span class="desc">Anyone with link can inspect</span>
           </div>
           <div class="vis-option ${vis === 'password' ? 'active' : ''}" onclick="changeVis('password')">
-            <span class="icon">🔑</span>
-            <div><div class="title">Password Protected</div><div class="desc">Requires key entry</div></div>
+            <span class="title">Password Protected</span>
+            <span class="desc">Requires verification key</span>
           </div>
           <div class="vis-option ${vis === 'private' ? 'active' : ''}" onclick="changeVis('private')">
-            <span class="icon">🔒</span>
-            <div><div class="title">Private</div><div class="desc">Only visible to owner</div></div>
+            <span class="title">Private</span>
+            <span class="desc">Only visible to owner</span>
           </div>
           <div class="pwd-section" id="pwdSection">
-            <input type="password" id="newPwd" placeholder="Enter custom password..." />
-            <button onclick="savePassword()">Lock with Password</button>
+            <input type="password" id="newPwd" placeholder="Set password..." />
+            <button onclick="savePassword()">Lock</button>
           </div>
         </div>
       </div>
 
       <button class="btn-action" onclick="copyUrl(this)">
-        📋 Copy URL
+        Copy URL
       </button>
 
       <select onchange="switchVersion(this.value)" title="Choose Version">
@@ -1523,11 +1459,11 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     function copyUrl(btn) {
       const url = window.location.href;
       navigator.clipboard.writeText(url).then(() => {
-        btn.innerHTML = '✅ Copied!';
+        btn.innerHTML = 'Copied!';
         btn.classList.add('copied');
-        showToast('Link copied to clipboard!');
+        showToast('Link copied!');
         setTimeout(() => {
-          btn.innerHTML = '📋 Copy URL';
+          btn.innerHTML = 'Copy URL';
           btn.classList.remove('copied');
         }, 2000);
       }).catch(() => {
@@ -1537,11 +1473,11 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
         input.select();
         document.execCommand('copy');
         document.body.removeChild(input);
-        btn.innerHTML = '✅ Copied!';
+        btn.innerHTML = 'Copied!';
         btn.classList.add('copied');
         showToast('Link copied!');
         setTimeout(() => {
-          btn.innerHTML = '📋 Copy URL';
+          btn.innerHTML = 'Copy URL';
           btn.classList.remove('copied');
         }, 2000);
       });
@@ -1623,90 +1559,72 @@ function renderPasswordPrompt(artifactId: string, type: 'private' | 'password'):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${isPrivate ? 'Private' : 'Password Protected'} - AnyArtifact</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Outfit', system-ui, sans-serif;
-      background: #060608;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #08080a;
       color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background-image: radial-gradient(circle at center, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
     }
     .card {
-      background: rgba(18, 18, 24, 0.6);
-      backdrop-filter: blur(16px);
-      border-radius: 24px;
+      background: #0d0d11;
+      border-radius: 12px;
       padding: 3rem;
-      max-width: 440px;
+      max-width: 420px;
       width: 90%;
       text-align: center;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
     }
-    .icon {
-      font-size: 3rem;
-      background: rgba(255, 255, 255, 0.03);
-      width: 80px;
-      height: 80px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 1.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-    p { color: #9ca3af; font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5; }
+    h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p { color: #888896; font-size: 0.9rem; margin-bottom: 2rem; line-height: 1.5; }
     .form-group { margin-bottom: 1.5rem; text-align: left; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group label { display: block; font-size: 0.72rem; font-weight: 600; color: #888896; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
     .form-group input {
       width: 100%;
-      padding: 12px 16px;
-      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
+      border-radius: 6px;
       color: #fff;
-      font-size: 1rem;
+      font-size: 0.95rem;
       outline: none;
-      transition: all 0.2s;
     }
-    .form-group input:focus { border-color: rgba(99, 102, 241, 0.4); }
+    .form-group input:focus { border-color: rgba(255,255,255,0.15); }
     button {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      color: #fff;
+      padding: 12px;
+      background: #fff;
+      color: #000;
       border: none;
-      border-radius: 10px;
-      font-size: 0.95rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
-      transition: transform 0.2s;
     }
-    button:hover { transform: translateY(-1px); }
-    .error { color: #ef4444; font-size: 0.85rem; margin-top: 1rem; display: none; font-weight: 600; }
+    .error { color: #ef4444; font-size: 0.82rem; margin-top: 1rem; display: none; font-weight: 600; }
     .back { margin-top: 2rem; }
-    .back a { color: #818cf8; text-decoration: none; font-size: 0.88rem; font-weight: 500; }
+    .back a { color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 600; }
     .back a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon">${isPrivate ? '🔒' : '🔑'}</div>
     <h1>${isPrivate ? 'This page is private' : 'Password Protected'}</h1>
     <p>${isPrivate ? 'Only the owner can view this page. If you are the owner, include the owner token in your link.' : 'Enter the secure password to unlock and inspect this artifact.'}</p>
     ${isPrivate ? '' : `
     <form id="pwdForm">
       <div class="form-group">
-        <label>Enter Password</label>
+        <label>Password</label>
         <input type="password" id="password" placeholder="••••••••" autofocus />
       </div>
-      <button type="submit">Unlock Artifact</button>
+      <button type="submit">Unlock Page</button>
       <div class="error" id="error">Incorrect password. Please try again.</div>
     </form>
     `}
@@ -1741,35 +1659,34 @@ function renderNotFound(): string {
   <meta charset="UTF-8">
   <title>Not Found - AnyArtifact</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Outfit', system-ui, sans-serif;
-      background: #060608;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #08080a;
       color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       margin: 0;
-      background-image: radial-gradient(circle at center, rgba(239, 68, 68, 0.05) 0%, transparent 60%);
     }
     .card {
       text-align: center;
       max-width: 400px;
       padding: 2rem;
     }
-    h1 { font-size: 5rem; font-weight: 800; background: linear-gradient(135deg, #ef4444, #f87171); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; margin-bottom: 1rem; }
-    h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
-    p { color: #9ca3af; font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5; }
-    a { color: #818cf8; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    h1 { font-size: 4rem; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 1rem; }
+    h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p { color: #888896; font-size: 0.88rem; margin-bottom: 2rem; line-height: 1.5; }
+    a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
     a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>404</h1>
-    <h2>Artifact not found</h2>
+    <h2>Page not found</h2>
     <p>The page you are looking for does not exist, has been deleted, or is set to private.</p>
     <a href="/">← Return to Gallery</a>
   </div>
