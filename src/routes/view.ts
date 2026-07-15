@@ -677,74 +677,7 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
       z-index: 1;
     }
 
-    /* BTN SIGNIN */
-    .btn-signin {
-      background: transparent;
-      color: var(--text-muted);
-      border: none;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      margin-right: 1.25rem;
-      transition: color 0.15s;
-      font-family: inherit;
-    }
-    .btn-signin:hover { color: #fff; }
 
-    /* AUTH MODAL */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-    .modal-overlay.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .modal-card {
-      background: #0d0d11;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-      text-align: center;
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-    }
-    .modal-header h3 { font-size: 1.05rem; font-weight: 700; color: #fff; }
-    .modal-close {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 1.25rem;
-      line-height: 1;
-      transition: color 0.15s;
-    }
-    .modal-close:hover { color: #fff; }
-    .modal-desc {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      line-height: 1.55;
-      text-align: left;
-    }
 
     /* FAQ SECTION */
     .faq-section {
@@ -796,10 +729,7 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
         <a href="#api">API</a>
         <a href="https://github.com/pathakcodes/anyartifact" target="_blank">GitHub</a>
       </div>
-      <div style="display: flex; align-items: center;">
-        <button class="btn-signin" onclick="openAuthModal()">Sign In</button>
-        <button class="nav-cta" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Get Started</button>
-      </div>
+      <button class="nav-cta" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Get Started</button>
     </div>
   </nav>
 
@@ -1037,21 +967,7 @@ Workflow:
     <p>© 2026 AnyArtifact · Built with ❤️ by <a href="https://github.com/pathakcodes" target="_blank" style="text-decoration: underline;">pathakcodes</a> for world</p>
   </footer>
 
-  <!-- AUTH MODAL -->
-  <div class="modal-overlay" id="authModal" onclick="closeAuthModal(event)">
-    <div class="modal-card" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Console Authentication</h3>
-        <button class="modal-close" onclick="closeAuthModal(event)">✕</button>
-      </div>
-      <p class="modal-desc" style="margin-bottom: 1.25rem;">Enter your API key below. This stores the token in your browser's local cache to authenticate actions for private or protected artifacts.</p>
-      <div style="text-align: left; margin-bottom: 1.5rem;">
-        <input type="password" id="authApiKey" placeholder="aa_..." style="width: 100%; padding: 10px 14px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; font-size: 0.88rem; outline: none; border-color: rgba(255,255,255,0.08);" />
-      </div>
-      <button class="btn-primary" onclick="saveAuthKey()" style="width: 100%; padding: 10px; font-size: 0.88rem; border-radius: 6px;">Save Key</button>
-      <div id="authStatus" style="font-size: 0.8rem; margin-top: 1rem; color: #10b981; display: none; font-weight: 600;">Key saved successfully!</div>
-    </div>
-  </div>
+
 
   <div class="toast" id="toast">Copied to clipboard!</div>
 
@@ -1095,27 +1011,7 @@ Workflow:
       document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
     });
 
-    function openAuthModal() {
-      const modal = document.getElementById('authModal');
-      const savedKey = localStorage.getItem('anyartifact_api_key') || '';
-      document.getElementById('authApiKey').value = savedKey;
-      modal.classList.add('show');
-    }
 
-    function closeAuthModal() {
-      document.getElementById('authModal').classList.remove('show');
-    }
-
-    function saveAuthKey() {
-      const key = document.getElementById('authApiKey').value.trim();
-      localStorage.setItem('anyartifact_api_key', key);
-      const status = document.getElementById('authStatus');
-      status.style.display = 'block';
-      setTimeout(() => {
-        status.style.display = 'none';
-        closeAuthModal();
-      }, 1200);
-    }
   </script>
 </body>
 </html>
