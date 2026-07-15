@@ -29,3 +29,7 @@ test-update.ts
 # Generated docs
 ANALYSIS.md
 FEATURES.md
+
+# Debug & Local profile
+chrome-profile/
+scratch/

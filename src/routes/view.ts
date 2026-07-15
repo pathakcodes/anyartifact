@@ -170,14 +170,22 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     }
 
     /* HERO */
+    /* HERO */
     .hero {
       max-width: 1200px;
       margin: 0 auto;
       padding: 6rem 2rem 4rem;
-      text-align: center;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+      gap: 4rem;
+      text-align: left;
+    }
+    .hero-content {
+      max-width: 580px;
     }
     .hero h1 {
-      font-size: 3.5rem;
+      font-size: 3rem;
       font-weight: 800;
       line-height: 1.15;
       letter-spacing: -0.03em;
@@ -186,15 +194,80 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     }
     .hero p {
       color: var(--text-muted);
-      font-size: 1.15rem;
-      max-width: 580px;
-      margin: 0 auto 2.5rem;
+      font-size: 1.1rem;
+      margin-bottom: 2.5rem;
       line-height: 1.55;
     }
     .hero-btns {
       display: flex;
       gap: 12px;
-      justify-content: center;
+      justify-content: flex-start;
+    }
+
+    /* TERMINAL MOCKUP */
+    .terminal-mockup {
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.82rem;
+      height: 310px;
+      display: flex;
+      flex-direction: column;
+    }
+    .terminal-header {
+      background: #121217;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27c93f; }
+    .terminal-title {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    .terminal-body {
+      padding: 16px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: #eaeaea;
+      text-align: left;
+      overflow-y: auto;
+    }
+    .term-line.prompt { color: #5c5cff; }
+    .term-line.output { color: var(--text-muted); }
+    .term-line.input { color: #fff; }
+    .term-line.success { color: #10b981; font-weight: 600; }
+    .term-frame {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+      height: 140px;
+      margin-top: 4px;
+      background: #09090b;
+    }
+    .term-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
     .btn-primary {
       background: var(--primary);
@@ -703,7 +776,11 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     }
 
     @media (max-width: 768px) {
+      .hero { grid-template-columns: 1fr; text-align: center; gap: 2.5rem; padding-top: 4rem; }
+      .hero-content { max-width: 100%; }
       .hero h1 { font-size: 2.25rem; }
+      .hero p { margin: 0 auto 2rem; }
+      .hero-btns { justify-content: center; }
       .nav-links { display: none; }
       .api-row { flex-direction: column; align-items: flex-start; gap: 6px; }
       .api-path { margin-left: 0; }
@@ -734,11 +811,27 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
   </nav>
 
   <section class="hero">
-    <h1>Publish AI-Generated<br>Web Pages Instantly</h1>
-    <p>Deploy dashboards, prototypes, and data visualizations directly from your AI agent workflow. No manual files, zero config hosting.</p>
-    <div class="hero-btns">
-      <button class="btn-primary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Integrate MCP</button>
-      <a href="https://github.com/pathakcodes/anyartifact" target="_blank" class="btn-secondary">View Repository</a>
+    <div class="hero-content">
+      <h1>Publish AI-Generated<br>Web Pages Instantly</h1>
+      <p>Deploy dashboards, prototypes, and data visualizations directly from your AI agent workflow. No manual files, zero config hosting.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Integrate MCP</button>
+        <a href="https://github.com/pathakcodes/anyartifact" target="_blank" class="btn-secondary">View Repository</a>
+      </div>
+    </div>
+    
+    <div class="terminal-mockup">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+        </div>
+        <div class="terminal-title">bash · anyartifact-cli</div>
+      </div>
+      <div class="terminal-body" id="demoTerminal">
+        <!-- Lines will be dynamically generated and animated via JS -->
+      </div>
     </div>
   </section>
 
@@ -1019,6 +1112,69 @@ Workflow:
     document.addEventListener('mousemove', (e) => {
       document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
       document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const termLines = [
+        { type: 'prompt', text: 'AnyAgent: Create a Mars Colony telemetry dashboard.' },
+        { type: 'output', text: '✔ Dashboard HTML generated successfully (48 KB)' },
+        { type: 'input', text: 'anyartifact publish ./mars_colony.html --title "Mars Colony"' },
+        { type: 'output', text: '✔ Connecting to server: https://anyartifact-production.up.railway.app' },
+        { type: 'output', text: '✔ Uploaded artifact "Mars Colony" (v1.0.0)' },
+        { type: 'success', text: '⚡ Live URL: https://anyartifact-production.up.railway.app/share/mars_colony' }
+      ];
+
+      const termBody = document.getElementById('demoTerminal');
+      if (!termBody) return;
+      termBody.innerHTML = '';
+
+      let currentLine = 0;
+
+      function renderNextLine() {
+        if (currentLine >= termLines.length) {
+          const frameDiv = document.createElement('div');
+          frameDiv.className = 'term-frame';
+          const iframe = document.createElement('iframe');
+          iframe.srcdoc = '<!DOCTYPE html><html><head><style>body{background:#09090b;color:#fff;font-family:system-ui,sans-serif;margin:0;padding:12px;font-size:11px}.header{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:6px;margin-bottom:8px}.title{font-weight:700;color:#5c5cff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:8px}.value{font-size:14px;font-weight:700;color:#10b981;margin-top:4px}.label{color:rgba(255,255,255,0.5)}</style></head><body><div class="header"><span class="title">🔴 MARS STATION ONE</span><span style="color:#ef4444">● LIVE TELEMETRY</span></div><div class="grid"><div class="card"><div class="label">Atmosphere</div><div class="value">0.06 Bar</div></div><div class="card"><div class="label">Temperature</div><div class="value">-63°C</div></div><div class="card" style="grid-column:span 2"><div class="label">Colony Power Grid</div><div style="background:rgba(255,255,255,0.05);height:4px;border-radius:2px;margin-top:6px;overflow:hidden"><div style="background:#10b981;width:78%;height:100%"></div></div></div></div></body></html>';
+          frameDiv.appendChild(iframe);
+          termBody.appendChild(frameDiv);
+          // Restart loop after 8 seconds
+          setTimeout(() => {
+            currentLine = 0;
+            termBody.innerHTML = '';
+            renderNextLine();
+          }, 8000);
+          return;
+        }
+
+        const line = termLines[currentLine];
+        const lineEl = document.createElement('div');
+        lineEl.className = 'term-line ' + line.type;
+        
+        if (line.type === 'input') {
+          lineEl.textContent = '$ ';
+          termBody.appendChild(lineEl);
+          let charIndex = 0;
+          function typeChar() {
+            if (charIndex < line.text.length) {
+              lineEl.textContent += line.text.charAt(charIndex);
+              charIndex++;
+              setTimeout(typeChar, 30);
+            } else {
+              currentLine++;
+              setTimeout(renderNextLine, 1000);
+            }
+          }
+          typeChar();
+        } else {
+          lineEl.textContent = line.text;
+          termBody.appendChild(lineEl);
+          currentLine++;
+          setTimeout(renderNextLine, line.type === 'prompt' ? 1500 : 800);
+        }
+      }
+
+      renderNextLine();
     });
 
 

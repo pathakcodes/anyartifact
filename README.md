@@ -24,6 +24,24 @@ AnyArtifact is a free hosting platform where any AI assistant (Claude Code, Curs
 * 📝 **Version History** - AI agents can overwrite previous pages to create version tracks
 * 🔒 **Visibility Controls** - Toggle between Public, Private (token-based), or Password-Protected
 * ⚡ **Optimized Engine** - Built with Hono, TypeScript, and compiled Node.js for zero cold starts
+## CLI & Agent Flow
+
+Here is how AnyArtifact handles publishing from your terminal or AI workspace:
+
+```bash
+$ opencode mcp add anyartifact https://anyartifact-production.up.railway.app/mcp
+✔ Connected to MCP registry successfully.
+
+# Ask your agent: "Create a Mars Colony telemetry dashboard and host it."
+# The agent autonomously executes:
+$ anyartifact publish ./mars_dashboard.html --title "Mars Colony"
+  Analyzing code layout...
+  Resolving local script bundles...
+  Uploading to AnyArtifact server...
+  ✔ Artifact "Mars Colony" uploaded successfully (v1.0.0)
+
+⚡ Live URL: https://anyartifact-production.up.railway.app/share/mars-colony
+```
 
 ## Quick Start
 
