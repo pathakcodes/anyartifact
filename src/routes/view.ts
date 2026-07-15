@@ -128,14 +128,18 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     .nav-brand .logo {
       width: 28px;
       height: 28px;
-      background: var(--primary);
-      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
-      font-size: 0.95rem;
-      font-weight: bold;
+    }
+    .logo-svg {
+      width: 20px;
+      height: 20px;
+      color: var(--primary);
+      transition: transform 0.3s ease;
+    }
+    .nav-brand:hover .logo-svg {
+      transform: translateY(-1px) rotate(5deg);
     }
     .nav-links {
       display: flex;
@@ -673,26 +677,129 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
       z-index: 1;
     }
 
+    /* BTN SIGNIN */
+    .btn-signin {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-right: 1.25rem;
+      transition: color 0.15s;
+      font-family: inherit;
+    }
+    .btn-signin:hover { color: #fff; }
+
+    /* AUTH MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: #0d0d11;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .modal-header h3 { font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      text-align: left;
+    }
+
+    /* FAQ SECTION */
+    .faq-section {
+      max-width: 1000px;
+      margin: 0 auto 6rem;
+      padding: 0 2rem;
+    }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2.25rem 3.5rem;
+    }
+    .faq-item h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+    .faq-item p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
     @media (max-width: 768px) {
       .hero h1 { font-size: 2.25rem; }
       .nav-links { display: none; }
       .api-row { flex-direction: column; align-items: flex-start; gap: 6px; }
       .api-path { margin-left: 0; }
+      .faq-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <nav>
     <div class="nav-inner">
-      <div class="nav-brand"><div class="logo">⚡</div>AnyArtifact</div>
+      <div class="nav-brand" onclick="window.location.href='/'" style="cursor: pointer;">
+        <div class="logo">
+          <svg class="logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        AnyArtifact
+      </div>
       <div class="nav-links">
         <a href="#setup">Setup</a>
         <a href="#gallery">Gallery</a>
-        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
         <a href="#api">API</a>
         <a href="https://github.com/pathakcodes/anyartifact" target="_blank">GitHub</a>
       </div>
-      <button class="nav-cta" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Get Started</button>
+      <div style="display: flex; align-items: center;">
+        <button class="btn-signin" onclick="openAuthModal()">Sign In</button>
+        <button class="nav-cta" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Get Started</button>
+      </div>
     </div>
   </nav>
 
@@ -862,6 +969,31 @@ Workflow:
     </div>
   </section>
 
+  <section class="faq-section" id="faq">
+    <div class="section-title-wrapper">
+      <span class="section-label-minimal">03 / FAQ</span>
+      <h2 class="section-title-minimal">Frequently Asked Questions</h2>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <h3>How does AnyArtifact work?</h3>
+        <p>AnyArtifact is an open-source hosting platform for interactive HTML files. By integrating the Model Context Protocol (MCP) server, your AI assistant (like Claude Code, Cursor, or Cline) can publish your generated pages directly from your workspace without requiring manual setup or copy-pasting.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Do I need an API key to publish?</h3>
+        <p>No, you do not need an API key to publish public artifacts. However, for authorized management and to deploy private or password-protected pages programmatically, you can generate a free API key directly from the console.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How do I update an existing page?</h3>
+        <p>When your AI agent modifies the code content of a page, it calls the <code>update_artifact</code> tool. This pushes a new version under the exact same sharing link. Visitors can view the latest release or inspect older states via the version history dropdown.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Can I password protect my files?</h3>
+        <p>Yes. You can restrict access to your page by setting a password or changing its visibility to Private from the viewer toolbar. Private artifacts are visible only to the owner via their unique owner token.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="api-section" id="api">
     <div class="section-title-wrapper">
       <span class="section-label-minimal">04 / Specifications</span>
@@ -902,8 +1034,24 @@ Workflow:
       <a href="/health">Health Status</a> · 
       <a href="/mcp/tools">MCP Tools</a>
     </div>
-    <p>© 2026 AnyArtifact · Built with Hono & sql.js</p>
+    <p>© 2026 AnyArtifact · Built with ❤️ by <a href="https://github.com/pathakcodes" target="_blank" style="text-decoration: underline;">pathakcodes</a> for world</p>
   </footer>
+
+  <!-- AUTH MODAL -->
+  <div class="modal-overlay" id="authModal" onclick="closeAuthModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Console Authentication</h3>
+        <button class="modal-close" onclick="closeAuthModal(event)">✕</button>
+      </div>
+      <p class="modal-desc" style="margin-bottom: 1.25rem;">Enter your API key below. This stores the token in your browser's local cache to authenticate actions for private or protected artifacts.</p>
+      <div style="text-align: left; margin-bottom: 1.5rem;">
+        <input type="password" id="authApiKey" placeholder="aa_..." style="width: 100%; padding: 10px 14px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; font-size: 0.88rem; outline: none; border-color: rgba(255,255,255,0.08);" />
+      </div>
+      <button class="btn-primary" onclick="saveAuthKey()" style="width: 100%; padding: 10px; font-size: 0.88rem; border-radius: 6px;">Save Key</button>
+      <div id="authStatus" style="font-size: 0.8rem; margin-top: 1rem; color: #10b981; display: none; font-weight: 600;">Key saved successfully!</div>
+    </div>
+  </div>
 
   <div class="toast" id="toast">Copied to clipboard!</div>
 
@@ -946,6 +1094,28 @@ Workflow:
       document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
       document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
     });
+
+    function openAuthModal() {
+      const modal = document.getElementById('authModal');
+      const savedKey = localStorage.getItem('anyartifact_api_key') || '';
+      document.getElementById('authApiKey').value = savedKey;
+      modal.classList.add('show');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.remove('show');
+    }
+
+    function saveAuthKey() {
+      const key = document.getElementById('authApiKey').value.trim();
+      localStorage.setItem('anyartifact_api_key', key);
+      const status = document.getElementById('authStatus');
+      status.style.display = 'block';
+      setTimeout(() => {
+        status.style.display = 'none';
+        closeAuthModal();
+      }, 1200);
+    }
   </script>
 </body>
 </html>
