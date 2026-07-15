@@ -783,15 +783,25 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
       </div>
       
       <div class="console-tabs">
-        <button class="console-tab active" onclick="switchTab(event, 'tab-claude')">Claude Code</button>
+        <button class="console-tab active" onclick="switchTab(event, 'tab-opencode')">OpenCode</button>
+        <button class="console-tab" onclick="switchTab(event, 'tab-claude')">Claude Code</button>
         <button class="console-tab" onclick="switchTab(event, 'tab-cursor')">Cursor / Windsurf</button>
         <button class="console-tab" onclick="switchTab(event, 'tab-cline')">Cline</button>
         <button class="console-tab" onclick="switchTab(event, 'tab-claude-desk')">Claude Desktop</button>
       </div>
 
       <div class="console-body">
+        <!-- Tab: OpenCode -->
+        <div id="tab-opencode" class="tab-content active">
+          <p class="setup-desc">Execute this command in your terminal workspace.</p>
+          <div class="code-container">
+            <pre><code>opencode mcp add anyartifact ${origin}/mcp</code></pre>
+            <button class="btn-copy" onclick="copyCode(this)">copy</button>
+          </div>
+        </div>
+
         <!-- Tab: Claude Code -->
-        <div id="tab-claude" class="tab-content active">
+        <div id="tab-claude" class="tab-content">
           <p class="setup-desc">Execute this command in your project workspace terminal.</p>
           <div class="code-container">
             <pre><code>claude mcp add --transport sse anyartifact ${origin}/mcp</code></pre>

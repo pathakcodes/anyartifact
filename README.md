@@ -1,4 +1,4 @@
-<h1 align="center"><img src="logo.svg" width="32" height="32" align="middle"> AnyArtifact</h1>
+<h1 align="center"><img src="logo.svg" width="32" height="32" style="vertical-align: middle; margin-right: 8px;"> AnyArtifact</h1>
 
 <p align="center">
   <strong>Free interactive web page hosting for any AI agent workflow</strong>
@@ -29,6 +29,11 @@ AnyArtifact is a free hosting platform where any AI assistant (Claude Code, Curs
 
 ### 1. Register MCP Server
 Add AnyArtifact as a tool to your AI agent of choice:
+
+**OpenCode**:
+```bash
+opencode mcp add anyartifact https://anyartifact-production.up.railway.app/mcp
+```
 
 **Claude Code**:
 ```bash
