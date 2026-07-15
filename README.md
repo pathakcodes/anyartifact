@@ -1,5 +1,5 @@
 <p align="center">
-  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#5c5cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#5c5cff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 </p>
@@ -16,8 +16,6 @@
 
 <p align="center">
   <a href="https://anyartifact-production.up.railway.app/health"><img src="https://img.shields.io/website?url=https%3A%2F%2Fanyartifact-production.up.railway.app%2Fhealth&label=status&up_color=10b981&down_color=ef4444" alt="Website Status"></a>
-  <img src="https://img.shields.io/github/license/pathakcodes/anyartifact" alt="License">
-  <img src="https://img.shields.io/github/languages/top/pathakcodes/anyartifact" alt="Language">
 </p>
 
 ---
@@ -82,7 +80,7 @@ Workflow:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/mcp/tools` | List available MCP tools |
-| `POST` | `/mcp/tools/call` | Invoke tool to publish/update |
+| `POST` | `/mcp/tools/call` | Execute a tool |
 
 ---
 
@@ -134,9 +132,3 @@ docker run -p 3000:3000 -v ./data:/app/data anyartifact
 
 ### v1.0.0 (May 2026)
 * **First Launch**: Introduced Hono HTTP API, sql.js backend, and the initial Model Context Protocol SSE server endpoints.
-
----
-
-## License
-
-MIT
