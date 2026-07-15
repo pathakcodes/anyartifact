@@ -55,6 +55,13 @@ export function runMigrations(db: SqlJsDatabase): void {
     )
   `);
 
+  // Migration: Add visibility columns to existing artifacts table
+  // These ALTER TABLE statements are safe to run even if columns already exist
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN visibility TEXT DEFAULT 'public'`); } catch {}
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN password_hash TEXT`); } catch {}
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN share_token TEXT`); } catch {}
+  try { db.run(`ALTER TABLE artifacts ADD COLUMN owner_token TEXT`); } catch {}
+
   // Indexes for performance
   db.run(`CREATE INDEX IF NOT EXISTS idx_artifacts_slug ON artifacts(slug)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created_at DESC)`);
@@ -63,13 +70,6 @@ export function runMigrations(db: SqlJsDatabase): void {
   db.run(`CREATE INDEX IF NOT EXISTS idx_versions_artifact ON artifact_versions(artifact_id, version_number DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_versions_hash ON artifact_versions(content_hash)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
-
-  // Migration: Add visibility columns to existing artifacts table
-  // These ALTER TABLE statements are safe to run even if columns already exist
-  try { db.run(`ALTER TABLE artifacts ADD COLUMN visibility TEXT DEFAULT 'public'`); } catch {}
-  try { db.run(`ALTER TABLE artifacts ADD COLUMN password_hash TEXT`); } catch {}
-  try { db.run(`ALTER TABLE artifacts ADD COLUMN share_token TEXT`); } catch {}
-  try { db.run(`ALTER TABLE artifacts ADD COLUMN owner_token TEXT`); } catch {}
 
   // Generate share tokens for existing artifacts that don't have one
   const needsToken = db.exec(`SELECT id FROM artifacts WHERE share_token IS NULL AND is_deleted = 0`);

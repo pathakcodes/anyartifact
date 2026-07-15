@@ -76,6 +76,7 @@ artifacts.post('/artifacts', publishRateLimit(), async (c) => {
 artifacts.put('/artifacts/:id', authMiddleware, publishRateLimit(), async (c) => {
   try {
     const id = c.req.param('id');
+    if (!id) return c.json({ error: 'Id parameter is required' }, 400);
     const body = await c.req.json();
     const input = PublishSchema.parse(body);
 
@@ -142,6 +143,7 @@ artifacts.get('/artifacts/:id', async (c) => {
 artifacts.get('/artifacts/:id/raw', async (c) => {
   try {
     const id = c.req.param('id');
+    if (!id) return c.json({ error: 'Id parameter is required' }, 400);
     const versionParam = c.req.query('version');
     const version = versionParam ? parseInt(versionParam) : undefined;
 
@@ -160,6 +162,7 @@ artifacts.get('/artifacts/:id/raw', async (c) => {
 artifacts.delete('/artifacts/:id', authMiddleware, async (c) => {
   try {
     const id = c.req.param('id');
+    if (!id) return c.json({ error: 'Id parameter is required' }, 400);
     await deleteArtifact(id, getApiKeyHash(c));
 
     return c.json({ success: true });
@@ -209,6 +212,7 @@ artifacts.post('/keys', async (c) => {
 artifacts.put('/artifacts/:id/visibility', async (c) => {
   try {
     const id = c.req.param('id');
+    if (!id) return c.json({ error: 'Id parameter is required' }, 400);
     const body = await c.req.json();
     const input = VisibilitySchema.parse(body);
 
@@ -252,6 +256,7 @@ artifacts.put('/artifacts/:id/visibility', async (c) => {
 artifacts.post('/artifacts/:id/verify', async (c) => {
   try {
     const id = c.req.param('id');
+    if (!id) return c.json({ error: 'Id parameter is required' }, 400);
     const body = await c.req.json();
     const input = VerifyPasswordSchema.parse(body);
 

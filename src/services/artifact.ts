@@ -230,8 +230,11 @@ export async function updateArtifact(id: string, input: PublishInput): Promise<P
     id,
     url: `${baseUrl}/${id}`,
     version: newVersion,
-    updated_at: new Date(timestamp).toISOString(),
+    created_at: new Date(artifact.created_at).toISOString(),
     size_bytes: sizeBytes,
+    visibility: artifact.visibility,
+    share_url: `${baseUrl}/share/${artifact.share_token}`,
+    owner_url: `${baseUrl}/${id}?owner=${artifact.owner_token}`,
   };
 }
 
@@ -257,7 +260,7 @@ export async function getArtifact(id: string): Promise<Artifact & { versions: Ar
 
   let versions: ArtifactVersion[] = [];
   if (versionsResults.length > 0) {
-    versions = versionsResults[0].values.map((v) =>
+    versions = versionsResults[0].values.map((v: any) =>
       mapVersionResult(versionsResults[0].columns, v)
     );
   }
@@ -305,7 +308,7 @@ export async function getArtifactContent(id: string, version?: number): Promise<
  * List recent artifacts
  */
 export async function listArtifacts(page: number = 1, limit: number = 20): Promise<{
-  artifacts: Omit<Artifact, 'api_key_hash' | 'is_deleted'>[];
+  artifacts: Omit<Artifact, 'api_key_hash' | 'is_deleted' | 'password_hash' | 'share_token' | 'owner_token'>[];
   total: number;
   page: number;
   limit: number;
@@ -328,9 +331,9 @@ export async function listArtifacts(page: number = 1, limit: number = 20): Promi
 
   const total = countResults[0]?.values[0]?.[0] as number || 0;
 
-  let artifacts: Omit<Artifact, 'api_key_hash' | 'is_deleted'>[] = [];
+  let artifacts: Omit<Artifact, 'api_key_hash' | 'is_deleted' | 'password_hash' | 'share_token' | 'owner_token'>[] = [];
   if (artifactsResults.length > 0) {
-    artifacts = artifactsResults[0].values.map((values) => {
+    artifacts = artifactsResults[0].values.map((values: any) => {
       const columns = artifactsResults[0].columns;
       return {
         id: values[columns.indexOf('id')] as string,

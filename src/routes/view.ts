@@ -15,7 +15,49 @@ viewRoutes.use('*', async (c, next) => {
 
 // GET / - Landing page with recent artifacts
 viewRoutes.get('/', viewRateLimit(), async (c) => {
-  const { artifacts } = await listArtifacts(1, 10);
+  const { artifacts } = await listArtifacts(1, 12);
+  const host = c.req.header('host') || 'localhost:3000';
+  const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
+  const origin = `${protocol}://${host}`;
+
+  const cardsHtml = artifacts.length > 0
+    ? artifacts.map((art: any) => {
+        const dateStr = new Date(art.created_at).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        const title = escapeHtml(art.title || 'Untitled');
+        const author = escapeHtml(art.author_name || 'Anonymous');
+        const desc = escapeHtml(art.description || 'Interactive HTML artifact');
+        const initials = author ? author.charAt(0).toUpperCase() : 'A';
+        
+        return `
+          <div class="gallery-card" onclick="window.location.href='/${art.id}'">
+            <div class="card-glow"></div>
+            <div class="card-header">
+              <span class="card-icon">⚡</span>
+              <span class="card-badge">HTML</span>
+            </div>
+            <h3 class="card-title">${title}</h3>
+            <p class="card-desc">${desc}</p>
+            <div class="card-footer">
+              <div class="author-info">
+                <div class="author-avatar">${initials}</div>
+                <span class="author-name">${author}</span>
+              </div>
+              <span class="card-date">${dateStr}</span>
+            </div>
+          </div>
+        `;
+      }).join('')
+    : `
+      <div class="empty-state">
+        <div class="empty-icon">📂</div>
+        <h3>No public artifacts yet</h3>
+        <p>Be the first to publish one by setting up your MCP server!</p>
+      </div>
+    `;
 
   return c.html(`
 <!DOCTYPE html>
@@ -25,343 +67,912 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AnyArtifact — Free AI Artifact Hosting</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter',system-ui,sans-serif;background:#09090b;color:#fafafa;-webkit-font-smoothing:antialiased}
-    a{color:inherit;text-decoration:none}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-dark: #050508;
+      --bg-card: rgba(255, 255, 255, 0.02);
+      --border-color: rgba(255, 255, 255, 0.06);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --accent: #a855f7;
+      --accent-cyan: #06b6d4;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 40%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+    /* GLOW BACKGROUND EFFECT */
+    .glow-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .glow-light {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      filter: blur(130px);
+      opacity: 0.15;
+    }
+    .glow-light-1 { top: -10%; left: 20%; background: var(--primary); }
+    .glow-light-2 { top: 40%; right: 10%; background: var(--accent); }
 
     /* NAV */
-    nav{position:sticky;top:0;z-index:50;background:rgba(9,9,11,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06)}
-    .nav-inner{max-width:1100px;margin:0 auto;padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
-    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1rem}
-    .nav-brand .logo{width:28px;height:28px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.8rem}
-    .nav-links{display:flex;gap:2rem;font-size:.85rem;color:#a1a1aa}
-    .nav-links a:hover{color:#fafafa}
-    .nav-cta{background:#fafafa;color:#09090b;padding:7px 16px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
-    .nav-cta:hover{opacity:.9}
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(5, 5, 8, 0.75);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      transition: all 0.3s;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 40%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav-brand .logo {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: bold;
+      -webkit-text-fill-color: initial;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .nav-links a {
+      transition: color 0.2s, transform 0.2s;
+    }
+    .nav-links a:hover {
+      color: #fff;
+    }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    }
 
     /* HERO */
-    .hero{max-width:1100px;margin:0 auto;padding:5rem 2rem 3rem;text-align:center}
-    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:5px 14px;border-radius:999px;font-size:.75rem;font-weight:500;margin-bottom:1.5rem}
-    .hero h1{font-size:3.2rem;font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:1rem}
-    .hero h1 span{background:linear-gradient(135deg,#818cf8,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .hero p{color:#a1a1aa;font-size:1.1rem;max-width:560px;margin:0 auto 2rem;line-height:1.6}
-    .hero-btns{display:flex;gap:12px;justify-content:center}
-    .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:12px 28px;border-radius:10px;font-size:.9rem;font-weight:600;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
-    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,102,241,.3)}
-    .btn-secondary{background:rgba(255,255,255,.06);color:#fafafa;padding:12px 28px;border-radius:10px;font-size:.9rem;font-weight:500;border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:border-color .15s}
-    .btn-secondary:hover{border-color:rgba(255,255,255,.2)}
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 6.5rem 2rem 4rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.1);
+    }
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: #818cf8;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { opacity: 0.3; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.3; transform: scale(0.9); }
+    }
+    .hero h1 {
+      font-size: 4rem;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1.5px;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #a855f7, #6366f1, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      max-width: 650px;
+      margin: 0 auto 3rem;
+      line-height: 1.6;
+    }
+    .hero-btns {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-main);
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
 
-    /* PROMPT BOX */
-    .prompt-section{max-width:800px;margin:0 auto 4rem;padding:0 2rem}
-    .prompt-card{background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(168,85,247,.05));border:1px solid rgba(99,102,241,.2);border-radius:16px;padding:1.5rem;position:relative}
-    .prompt-card .label{position:absolute;top:-11px;left:20px;background:#6366f1;color:#fff;padding:3px 12px;border-radius:8px;font-size:.7rem;font-weight:600;letter-spacing:.3px}
-    .prompt-card pre{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:1rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#d4d4d8;line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-word;margin-top:8px}
-    .prompt-card .copy{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.08);color:#d4d4d8;border:1px solid rgba(255,255,255,.08);padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s}
-    .prompt-card .copy:hover{background:rgba(255,255,255,.12)}
-    .prompt-card .copy.ok{background:#22c55e;color:#000;border-color:#22c55e}
+    /* TABS SETUP SECTION */
+    .setup-section {
+      max-width: 900px;
+      margin: 2rem auto 6rem;
+      padding: 0 2rem;
+    }
+    .setup-card {
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 2.5rem;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+    .setup-card .card-label {
+      position: absolute;
+      top: -12px;
+      left: 30px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      padding: 4px 16px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    }
+    .setup-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      overflow-x: auto;
+    }
+    .setup-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 18px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .setup-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .setup-tab.active {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .setup-item-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .setup-cmd-container {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .setup-cmd-container pre {
+      background: #060608;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .setup-cmd-container .btn-copy {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .setup-cmd-container .btn-copy:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .setup-cmd-container .btn-copy.copied {
+      background: #10b981;
+      border-color: #10b981;
+      color: #000;
+    }
+    
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-    /* TOOLS GRID */
-    .tools-section{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
-    .section-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6366f1;margin-bottom:.75rem}
-    .section-title{font-size:1.5rem;font-weight:700;margin-bottom:.5rem}
-    .section-desc{color:#a1a1aa;font-size:.9rem;margin-bottom:1.5rem}
-    .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .tool-item{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .15s}
-    .tool-item:hover{border-color:rgba(99,102,241,.4);background:rgba(99,102,241,.05)}
-    .tool-item .left{display:flex;align-items:center;gap:10px}
-    .tool-item .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
-    .tool-item .name{font-size:.85rem;font-weight:500}
-    .tool-item .hint{font-size:.7rem;color:#52525b}
-    .tool-item .hint.done{color:#22c55e}
+    /* GALLERY / PUBLIC ARTIFACTS */
+    .gallery-section {
+      max-width: 1200px;
+      margin: 0 auto 6rem;
+      padding: 0 2rem;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .section-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.75px;
+      margin-bottom: 0.75rem;
+    }
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .gallery-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.75rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 220px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gallery-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 12px 30px rgba(99, 102, 241, 0.1);
+    }
+    .gallery-card:hover .card-glow {
+      opacity: 0.15;
+    }
+    .card-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 0%, var(--primary), transparent 60%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .card-icon {
+      font-size: 1.25rem;
+      background: rgba(255, 255, 255, 0.05);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 3px 10px;
+      border-radius: 8px;
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .card-footer {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 0.8rem;
+    }
+    .author-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .author-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: bold;
+      color: #fff;
+    }
+    .author-name {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .card-date {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border-color);
+      border-radius: 20px;
+    }
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .empty-state h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .empty-state p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
 
-    /* FEATURES */
-    .features{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
-    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-    .feat-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.5rem;transition:border-color .2s}
-    .feat-card:hover{border-color:rgba(99,102,241,.3)}
-    .feat-card .icon{font-size:1.5rem;margin-bottom:.75rem}
-    .feat-card h3{font-size:.95rem;font-weight:600;margin-bottom:.35rem}
-    .feat-card p{color:#71717a;font-size:.82rem;line-height:1.5}
+    /* FEATURES SECTION */
+    .features-section {
+      max-width: 1200px;
+      margin: 0 auto 6rem;
+      padding: 0 2rem;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+    }
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin-bottom: 1.25rem;
+    }
+    .feature-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
 
-    /* HOW IT WORKS */
-    .how{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
-    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:1.5rem}
-    .step{position:relative;padding:1.5rem;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px}
-    .step .num{position:absolute;top:-12px;left:20px;background:#6366f1;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
-    .step h3{font-size:.9rem;font-weight:600;margin-bottom:.35rem;margin-top:.25rem}
-    .step p{color:#71717a;font-size:.8rem;line-height:1.5}
-    .step code{font-family:'JetBrains Mono',monospace;font-size:.72rem;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;color:#c084fc}
-
-    /* API REFERENCE */
-    .api{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
-    .api-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.5rem;overflow:hidden}
-    .api-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-    .api-row:last-child{border:none}
-    .api-method{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:4px;min-width:50px;text-align:center}
-    .api-method.post{background:rgba(34,197,94,.12);color:#4ade80}
-    .api-method.put{background:rgba(234,179,8,.12);color:#facc15}
-    .api-method.get{background:rgba(56,189,248,.12);color:#38bdf8}
-    .api-method.del{background:rgba(239,68,68,.12);color:#f87171}
-    .api-path{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#d4d4d8;margin-left:12px;flex:1}
-    .api-desc{color:#52525b;font-size:.78rem}
-
-    /* MCP SECTION */
-    .mcp-section{max-width:1100px;margin:0 auto 4rem;padding:0 2rem}
-    .mcp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-    .mcp-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.25rem}
-    .mcp-card h3{font-size:.85rem;font-weight:600;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
-    .mcp-card p{color:#52525b;font-size:.75rem;margin-top:8px}
-    .mcp-url{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .15s}
-    .mcp-url:hover{border-color:rgba(99,102,241,.4)}
-    .mcp-url code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#c084fc}
-    .mcp-url .hint{font-size:.65rem;color:#52525b}
-    .mcp-tools{display:flex;flex-direction:column;gap:6px}
-    .mcp-tool{display:flex;align-items:center;justify-content:space-between;background:#0f0f11;border-radius:6px;padding:8px 10px}
-    .mcp-tool code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#38bdf8}
-    .mcp-tool span{font-size:.68rem;color:#52525b}
-    .mcp-ep{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-    .mcp-ep:last-child{border:none}
-    .mcp-ep code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#4ade80}
-    .mcp-ep span{font-size:.68rem;color:#52525b}
-    .mcp-proto{display:flex;flex-wrap:wrap;gap:6px}
-    .proto-item .badge{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 10px;border-radius:6px;font-size:.68rem;font-weight:500}
-    .mcp-example{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.25rem}
-    .mcp-example h3{font-size:.85rem;font-weight:600;margin-bottom:.75rem}
-    .mcp-example pre{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#d4d4d8;line-height:1.6;overflow-x:auto}
-
-    /* SETUP GRID */
-    .setup-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
-    .setup-item{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:12px}
-    .setup-item h4{font-size:.8rem;font-weight:600;margin-bottom:6px;color:#e2e8f0}
-    .setup-cmd{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color .15s}
-    .setup-cmd:hover{border-color:rgba(99,102,241,.4)}
-    .setup-cmd code{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#c084fc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .setup-cmd span{font-size:.6rem;color:#52525b;flex-shrink:0;margin-left:8px}
-    .setup-cmd span.done{color:#22c55e}
-    .hint{font-size:.65rem;color:#3f3f46;margin-top:4px}
+    /* API TABLE SECTION */
+    .api-section {
+      max-width: 1000px;
+      margin: 0 auto 6rem;
+      padding: 0 2rem;
+    }
+    .api-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .api-table th {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .api-table td {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 0.9rem;
+    }
+    .api-table tr:last-child td { border: none; }
+    .method-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .method-badge.post { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .method-badge.put { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .method-badge.get { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    .method-badge.del { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .api-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+    }
 
     /* FOOTER */
-    footer{border-top:1px solid rgba(255,255,255,.06);padding:2rem;text-align:center;color:#52525b;font-size:.8rem}
-    footer a{color:#a1a1aa}
-    footer a:hover{color:#fafafa}
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 3.5rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    footer a {
+      color: #fff;
+      transition: opacity 0.2s;
+    }
+    footer a:hover { opacity: 0.8; }
+    .footer-divider {
+      margin: 1.5rem 0;
+      opacity: 0.1;
+      border-color: #fff;
+    }
 
-    @media(max-width:768px){.tools-grid,.feat-grid,.steps,.mcp-grid{grid-template-columns:1fr}.hero h1{font-size:2rem}}
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2.5rem; }
+      .nav-links { display: none; }
+      .setup-card { padding: 1.5rem; }
+    }
   </style>
 </head>
 <body>
+  <div class="glow-container">
+    <div class="glow-light glow-light-1"></div>
+    <div class="glow-light glow-light-2"></div>
+  </div>
+
   <nav>
     <div class="nav-inner">
       <div class="nav-brand"><div class="logo">⚡</div>AnyArtifact</div>
       <div class="nav-links">
-        <a href="#setup">Setup</a>
+        <a href="#setup">Integrate</a>
+        <a href="#gallery">Recent Artifacts</a>
         <a href="#features">Features</a>
-        <a href="#mcp">MCP</a>
         <a href="#api">API</a>
-        <a href="https://github.com/pathakcodes/anyartifact">GitHub</a>
+        <a href="https://github.com/pathakcodes/anyartifact" target="_blank">GitHub</a>
       </div>
-      <button class="nav-cta" onclick="document.getElementById('prompt').scrollIntoView({behavior:'smooth'})">Get Started</button>
+      <button class="nav-cta" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Get Started</button>
     </div>
   </nav>
 
   <section class="hero">
-    <div class="hero-badge">⚡ Open Source & Free Forever</div>
-    <h1>Interactive artifacts for<br><span>any AI agent</span></h1>
-    <p>Publish HTML artifacts from Claude, Cursor, Cline, or any tool. No API key needed. Get a URL in seconds.</p>
+    <div class="hero-badge">
+      <span class="dot"></span>
+      ⚡ Open Source & Free Forever
+    </div>
+    <h1>Deploy AI-Generated<br><span>Interactive Artifacts</span></h1>
+    <p>Host dashboards, charts, visualizations, and static pages directly from Claude Code, Cursor, Cline, or any agent. No signup, zero fees.</p>
     <div class="hero-btns">
-      <button class="btn-primary" onclick="document.getElementById('prompt').scrollIntoView({behavior:'smooth'})">Quick Start →</button>
-      <a href="https://github.com/pathakcodes/anyartifact" class="btn-secondary">View on GitHub</a>
+      <button class="btn-primary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">Add to Agent</button>
+      <a href="https://github.com/pathakcodes/anyartifact" target="_blank" class="btn-secondary">View on GitHub</a>
     </div>
   </section>
 
-  <section class="prompt-section" id="prompt">
-    <div class="prompt-card">
-      <div class="label">📋 STEP 1 — ADD MCP SERVER</div>
-      <div class="setup-grid">
-        <div class="setup-item">
-          <h4>Claude Code</h4>
-          <div class="setup-cmd" onclick="copyCmd(this)"><code>claude mcp add --transport sse anyartifact https://anyartifact-production.up.railway.app/mcp</code><span>copy</span></div>
-        </div>
-        <div class="setup-item">
-          <h4>Claude Desktop</h4>
-          <div class="setup-cmd" onclick="copyCmd(this)"><code>{"mcpServers":{"anyartifact":{"url":"https://anyartifact-production.up.railway.app/mcp"}}}</code><span>copy JSON</span></div>
-          <p class="hint">Add to ~/Library/Application Support/Claude/claude_desktop_config.json</p>
-        </div>
-        <div class="setup-item">
-          <h4>OpenCode</h4>
-          <div class="setup-cmd" onclick="copyCmd(this)"><code>{"mcp":{"anyartifact":{"type":"remote","url":"https://anyartifact-production.up.railway.app/mcp","enabled":true}}}</code><span>copy JSON</span></div>
-          <p class="hint">Add to ~/.config/opencode/opencode.json</p>
-        </div>
-        <div class="setup-item">
-          <h4>Cursor / Cline / Windsurf</h4>
-          <div class="setup-cmd" onclick="copyCmd(this)"><code>https://anyartifact-production.up.railway.app/mcp</code><span>copy URL</span></div>
-          <p class="hint">Add as MCP server URL in settings</p>
+  <section class="setup-section" id="setup">
+    <div class="setup-card">
+      <div class="card-label">STEP 1 — CHOOSE YOUR CODESPACE</div>
+      
+      <div class="setup-tabs">
+        <button class="setup-tab active" onclick="switchTab(event, 'tab-claude')">Claude Code</button>
+        <button class="setup-tab" onclick="switchTab(event, 'tab-cursor')">Cursor / Windsurf</button>
+        <button class="setup-tab" onclick="switchTab(event, 'tab-cline')">Cline</button>
+        <button class="setup-tab" onclick="switchTab(event, 'tab-claude-desk')">Claude Desktop</button>
+        <button class="setup-tab" onclick="switchTab(event, 'tab-opencode')">OpenCode</button>
+      </div>
+
+      <!-- Tab: Claude Code -->
+      <div id="tab-claude" class="tab-content active">
+        <p class="setup-item-desc">Run this command in your project terminal to automatically connect AnyArtifact to Claude Code.</p>
+        <div class="setup-cmd-container">
+          <pre><code>claude mcp add --transport sse anyartifact ${origin}/mcp</code></pre>
+          <button class="btn-copy" onclick="copyCode(this)">copy</button>
         </div>
       </div>
-    </div>
-    <div class="prompt-card" style="margin-top:12px">
-      <div class="label">📋 STEP 2 — ADD THIS RULE TO YOUR PROJECT</div>
-      <button class="copy" onclick="copyPrompt(this)">📋 Copy</button>
-      <pre><code>## AnyArtifact Integration
 
-When creating interactive HTML artifacts (charts, dashboards, visualizations, reports, or any web page), use the AnyArtifact MCP tools to publish them.
-
-MCP Server: https://anyartifact-production.up.railway.app/mcp
-Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
-
-Workflow:
-1. Generate the HTML content
-2. Call publish_artifact with content and title
-3. Use visibility "public" so the user can view it
-4. Return the URL to the user
-
-The user can view the artifact at the returned URL. If they want to change visibility, they can use the owner_url.</code></pre>
-    </div>
-  </section>
-
-  <section class="tools-section" id="setup">
-    <div class="section-label">Setup</div>
-    <div class="section-title">One command to get started</div>
-    <div class="section-desc">Add AnyArtifact to your favorite coding tool</div>
-    <div class="tools-grid">
-      <div class="tool-item" onclick="copyTool(this,'claude mcp add anyartifact https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">Claude Code</span></div><span class="hint">copy</span></div>
-      <div class="tool-item" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">Cline</span></div><span class="hint">copy URL</span></div>
-      <div class="tool-item" onclick="copyTool(this,'{\"anyartifact\":{\"url\":\"https://anyartifact-production.up.railway.app/mcp\"}}')"><div class="left"><span class="dot"></span><span class="name">KiloCode</span></div><span class="hint">copy JSON</span></div>
-      <div class="tool-item" onclick="copyTool(this,'{\"anyartifact\":{\"url\":\"https://anyartifact-production.up.railway.app/mcp\"}}')"><div class="left"><span class="dot"></span><span class="name">Cursor</span></div><span class="hint">copy JSON</span></div>
-      <div class="tool-item" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">OpenCode</span></div><span class="hint">copy URL</span></div>
-      <div class="tool-item" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')"><div class="left"><span class="dot"></span><span class="name">Windsurf</span></div><span class="hint">copy URL</span></div>
-    </div>
-  </section>
-
-  <section class="features" id="features">
-    <div class="section-label">Features</div>
-    <div class="section-title">Everything you need</div>
-    <div class="section-desc">Publish, share, and manage interactive artifacts</div>
-    <div class="feat-grid">
-      <div class="feat-card"><div class="icon">🌐</div><h3>Public Sharing</h3><p>Anyone with the link can view. Perfect for demos, dashboards, and reports.</p></div>
-      <div class="feat-card"><div class="icon">🔑</div><h3>Password Protection</h3><p>Set a password. Only people who know it can view the artifact.</p></div>
-      <div class="feat-card"><div class="icon">🔒</div><h3>Private by Default</h3><p>Only you can see it via your owner URL. Change anytime from the toolbar.</p></div>
-      <div class="feat-card"><div class="icon">📦</div><h3>Versioned</h3><p>Update artifacts without changing URLs. View any version from the dropdown.</p></div>
-      <div class="feat-card"><div class="icon">🔌</div><h3>MCP Integration</h3><p>Works with any MCP-compatible tool. Auto-discover publish and update tools.</p></div>
-      <div class="feat-card"><div class="icon">🆓</div><h3>No API Key</h3><p>Anyone can publish. No signup, no auth. Just POST and get your URL.</p></div>
-    </div>
-  </section>
-
-  <section class="how">
-    <div class="section-label">How it works</div>
-    <div class="section-title">Three steps to your artifact</div>
-    <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Publish</h3><p>POST your HTML to the API or use the MCP tool. No authentication required.</p><code>POST /api/v1/artifacts</code></div>
-      <div class="step"><div class="num">2</div><h3>Get your URL</h3><p>Receive an <code>owner_url</code>, <code>share_url</code>, and direct <code>url</code> in the response.</p><code>owner_url</code></div>
-      <div class="step"><div class="num">3</div><h3>Manage</h3><p>Open your owner URL. Click the visibility badge to switch between Public, Password, or Private.</p><code>visibility badge</code></div>
-    </div>
-  </section>
-
-  <section class="mcp-section" id="mcp">
-    <div class="section-label">MCP Server</div>
-    <div class="section-title">Native MCP protocol support</div>
-    <div class="section-desc">Connect AnyArtifact directly to your AI agent via Model Context Protocol</div>
-    <div class="mcp-grid">
-      <div class="mcp-card">
-        <h3>🔌 Server URL</h3>
-        <div class="mcp-url" onclick="copyTool(this,'https://anyartifact-production.up.railway.app/mcp')">
-          <code>https://anyartifact-production.up.railway.app/mcp</code>
-          <span class="hint">copy</span>
+      <!-- Tab: Cursor -->
+      <div id="tab-cursor" class="tab-content">
+        <p class="setup-item-desc">Add AnyArtifact as a new MCP server in Cursor/Windsurf settings.</p>
+        <div class="setup-cmd-container">
+          <pre><code>${origin}/mcp</code></pre>
+          <button class="btn-copy" onclick="copyCode(this)">copy URL</button>
         </div>
-        <p>SSE + JSON-RPC transport</p>
+        <div class="hint">ℹ️ Go to Settings > Features > MCP, select SSE transport, and paste the URL.</div>
       </div>
-      <div class="mcp-card">
-        <h3>🛠️ Available Tools</h3>
-        <div class="mcp-tools">
-          <div class="mcp-tool"><code>publish_artifact</code><span>Create new artifact</span></div>
-          <div class="mcp-tool"><code>update_artifact</code><span>Update existing</span></div>
-          <div class="mcp-tool"><code>get_artifact</code><span>Get metadata</span></div>
-          <div class="mcp-tool"><code>list_artifacts</code><span>List public</span></div>
+
+      <!-- Tab: Cline -->
+      <div id="tab-cline" class="tab-content">
+        <p class="setup-item-desc">Enable Cline to use the AnyArtifact publish tools by registering this MCP server URL.</p>
+        <div class="setup-cmd-container">
+          <pre><code>${origin}/mcp</code></pre>
+          <button class="btn-copy" onclick="copyCode(this)">copy URL</button>
         </div>
+        <div class="hint">ℹ️ Set as an SSE provider in your Cline settings page.</div>
       </div>
-      <div class="mcp-card">
-        <h3>📡 Endpoints</h3>
-        <div class="mcp-ep"><code>/mcp/sse</code><span>SSE connection</span></div>
-        <div class="mcp-ep"><code>/mcp/message</code><span>JSON-RPC messages</span></div>
-        <div class="mcp-ep"><code>/mcp/tools</code><span>List tools (REST)</span></div>
-        <div class="mcp-ep"><code>/mcp/tools/call</code><span>Call tool (REST)</span></div>
-      </div>
-      <div class="mcp-card">
-        <h3>⚡ Protocol</h3>
-        <div class="mcp-proto">
-          <div class="proto-item"><span class="badge">JSON-RPC 2.0</span></div>
-          <div class="proto-item"><span class="badge">SSE Transport</span></div>
-          <div class="proto-item"><span class="badge">Session Mgmt</span></div>
-          <div class="proto-item"><span class="badge">v2024-11-05</span></div>
-        </div>
-        <p style="margin-top:10px">Supports <code style="color:#818cf8">initialize</code>, <code style="color:#818cf8">tools/list</code>, <code style="color:#818cf8">tools/call</code></p>
-      </div>
-    </div>
-    <div class="mcp-example">
-      <h3>Example: MCP tool call</h3>
-      <pre><code>{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "publish_artifact",
-    "arguments": {
-      "content": "&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;",
-      "title": "My Artifact",
-      "visibility": "public"
+
+      <!-- Tab: Claude Desktop -->
+      <div id="tab-claude-desk" class="tab-content">
+        <p class="setup-item-desc">Add this snippet to your Claude Desktop config JSON file.</p>
+        <div class="setup-cmd-container">
+          <pre><code>{
+  "mcpServers": {
+    "anyartifact": {
+      "url": "${origin}/mcp"
     }
   }
 }</code></pre>
+          <button class="btn-copy" onclick="copyCode(this)">copy JSON</button>
+        </div>
+        <p class="hint">📁 Located at: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS</p>
+      </div>
+
+      <!-- Tab: OpenCode -->
+      <div id="tab-opencode" class="tab-content">
+        <p class="setup-item-desc">Paste this inside your local opencode JSON configuration file.</p>
+        <div class="setup-cmd-container">
+          <pre><code>{
+  "mcp": {
+    "anyartifact": {
+      "type": "remote",
+      "url": "${origin}/mcp",
+      "enabled": true
+    }
+  }
+}</code></pre>
+          <button class="btn-copy" onclick="copyCode(this)">copy JSON</button>
+        </div>
+        <p class="hint">📁 Config path: <code>~/.config/opencode/opencode.json</code></p>
+      </div>
+    </div>
+
+    <div class="setup-card" style="margin-top: 2rem">
+      <div class="card-label">STEP 2 — ADD AN AGENT RULE</div>
+      <p class="setup-item-desc" style="margin-bottom: 1.5rem">Provide this instruction to your AI agent in your prompt or <code>.cursorrules</code> / <code>.clinerules</code> file so it knows how to upload pages automatically.</p>
+      <div class="setup-cmd-container">
+        <pre><code>## AnyArtifact Integration
+
+When creating interactive HTML artifacts (charts, dashboards, visualizations, reports, or web apps), use the AnyArtifact MCP tools to publish them.
+
+MCP Server: ${origin}/mcp
+Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
+
+Workflow:
+1. Generate the HTML content.
+2. Call publish_artifact with the code and title.
+3. Use visibility "public" so the user can inspect it.
+4. Provide the returned URL link to the user.</code></pre>
+        <button class="btn-copy" onclick="copyCode(this)">📋 Copy Rule</button>
+      </div>
     </div>
   </section>
 
-  <section class="api" id="api">
-    <div class="section-label">API Reference</div>
-    <div class="section-title">REST API endpoints</div>
-    <div class="section-desc">Full documentation for programmatic access</div>
+  <section class="gallery-section" id="gallery">
+    <div class="section-header">
+      <span class="section-label">Gallery</span>
+      <h2 class="section-title">Recent Public Artifacts</h2>
+      <p class="section-desc">Browse community creations generated by AI agents around the world.</p>
+    </div>
+    <div class="gallery-grid">
+      ${cardsHtml}
+    </div>
+  </section>
+
+  <section class="features-section" id="features">
+    <div class="section-header">
+      <span class="section-label">Capabilities</span>
+      <h2 class="section-title">Everything you need</h2>
+      <p class="section-desc">Host pages seamlessly with zero complex cloud setups.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>Public Sharing</h3>
+        <p>Generate a unique URL instantly. Anyone with the URL can inspect the visual pages, dashboards, or prototypes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔑</div>
+        <h3>Password Protection</h3>
+        <p>Limit access by securing your pages with custom passwords. Keep sensitive charts or layouts hidden.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Private by Default</h3>
+        <p>Only you can view and modify details via your unique Owner URL. Easily manage visibility settings from the toolbar.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <h3>Version History</h3>
+        <p>Keep your sharing link consistent. Agent updates generate new versions you can switch between dynamically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔌</div>
+        <h3>Native MCP Support</h3>
+        <p>Compliant with the Model Context Protocol. Works instantly out of the box with any compatible IDE extension.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🆓</div>
+        <h3>Free & Zero API Key</h3>
+        <p>Host web files without signing up or dealing with secret keys. The ideal companion for developers and AI pairings.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="api-section" id="api">
+    <div class="section-header">
+      <span class="section-label">REST API</span>
+      <h2 class="section-title">Developer Reference</h2>
+      <p class="section-desc">Connect programmatically via REST API integrations.</p>
+    </div>
     <div class="api-card">
-      <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/v1/artifacts</span><span class="api-desc">Publish a new artifact</span></div>
-      <div class="api-row"><span class="api-method put">PUT</span><span class="api-path">/api/v1/artifacts/:id</span><span class="api-desc">Update an existing artifact</span></div>
-      <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/v1/artifacts</span><span class="api-desc">List recent public artifacts</span></div>
-      <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/v1/artifacts/:id</span><span class="api-desc">Get artifact metadata</span></div>
-      <div class="api-row"><span class="api-method del">DEL</span><span class="api-path">/api/v1/artifacts/:id</span><span class="api-desc">Delete an artifact</span></div>
-      <div class="api-row"><span class="api-method put">PUT</span><span class="api-path">/api/v1/artifacts/:id/visibility</span><span class="api-desc">Change visibility settings</span></div>
-      <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/v1/artifacts/:id/verify</span><span class="api-desc">Verify a password</span></div>
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><span class="api-path">/api/v1/artifacts</span></td>
+            <td>Publish a new HTML artifact</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge put">PUT</span></td>
+            <td><span class="api-path">/api/v1/artifacts/:id</span></td>
+            <td>Upload a new version for an artifact</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><span class="api-path">/api/v1/artifacts</span></td>
+            <td>List recent public artifacts</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><span class="api-path">/api/v1/artifacts/:id</span></td>
+            <td>Fetch artifact metadata and version details</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge del">DELETE</span></td>
+            <td><span class="api-path">/api/v1/artifacts/:id</span></td>
+            <td>Permanently delete an artifact</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge put">PUT</span></td>
+            <td><span class="api-path">/api/v1/artifacts/:id/visibility</span></td>
+            <td>Update visibility type (public, private, password)</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
   <footer>
-    Built by <a href="https://github.com/pathakcodes">Shivam Kumar Pathak</a> & Claude · <a href="https://github.com/pathakcodes/anyartifact">GitHub</a> · <a href="/health">Health</a> · <a href="/mcp/tools">MCP Tools</a>
-    <div style="margin-top:8px;color:#3f3f46;font-size:.7rem">© 2026 AnyArtifact · Free forever</div>
+    <p>Built with ❤️ for AI developers · Powered by Hono & sql.js</p>
+    <hr class="footer-divider">
+    <div>
+      <a href="https://github.com/pathakcodes/anyartifact" target="_blank">GitHub</a> · 
+      <a href="/health">System Health</a> · 
+      <a href="/mcp/tools">MCP Tools</a>
+    </div>
+    <p style="margin-top: 1rem; color: #52525b; font-size: 0.8rem;">© 2026 AnyArtifact · Free Forever</p>
   </footer>
 
   <script>
-    function copyTool(el, text) {
-      navigator.clipboard.writeText(text).then(() => {
-        const h = el.querySelector('.hint');
-        h.textContent = 'copied!';
-        h.classList.add('done');
-        setTimeout(() => { h.textContent = text.includes('claude') ? 'copy' : text.includes('{') ? 'copy JSON' : 'copy URL'; h.classList.remove('done'); }, 2000);
+    function switchTab(e, tabId) {
+      document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      e.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function copyCode(btn) {
+      const code = btn.parentElement.querySelector('code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = btn.dataset.label || 'copy';
+          btn.classList.remove('copied');
+        }, 2000);
       });
     }
-    function copyCmd(el) {
-      const text = el.querySelector('code').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        const s = el.querySelector('span');
-        s.textContent = 'copied!';
-        s.classList.add('done');
-        setTimeout(() => { s.textContent = s.dataset.orig || 'copy'; s.classList.remove('done'); }, 2000);
-      });
-    }
-    function copyPrompt(btn) {
-      const text = btn.parentElement.querySelector('code').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = '✅ Copied!';
-        btn.classList.add('ok');
-        setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('ok'); }, 2500);
-      });
-    }
+
+    // Keep initial copy button labels
+    document.querySelectorAll('.btn-copy').forEach(btn => {
+      btn.dataset.label = btn.textContent;
+    });
   </script>
 </body>
 </html>
@@ -372,6 +983,9 @@ The user can view the artifact at the returned URL. If they want to change visib
 viewRoutes.get('/share/:token', viewRateLimit(), async (c) => {
   try {
     const token = c.req.param('token');
+    if (!token) {
+      return c.html(renderNotFound(), 404);
+    }
     const artifact = await getArtifactByShareToken(token);
     const { content } = await getArtifactContent(artifact.id);
 
@@ -414,6 +1028,9 @@ viewRoutes.get('/share/:token', viewRateLimit(), async (c) => {
 viewRoutes.get('/:id', viewRateLimit(), async (c) => {
   try {
     const id = c.req.param('id');
+    if (!id) {
+      return c.html(renderNotFound(), 404);
+    }
 
     // Skip non-artifact routes
     if (['health', 'api', 'mcp'].includes(id) || id.startsWith('api') || id.startsWith('mcp')) {
@@ -479,12 +1096,9 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
     : `<option value="${version}" selected>v${version}</option>`;
 
   const vis = artifact.visibility || 'public';
-  const visColor = vis === 'private' ? '#ef4444' : vis === 'password' ? '#f59e0b' : '#22c55e';
+  const visColor = vis === 'private' ? '#ef4444' : vis === 'password' ? '#f59e0b' : '#10b981';
   const visIcon = vis === 'private' ? '🔒' : vis === 'password' ? '🔑' : '🌐';
   const visLabel = vis === 'private' ? 'Private' : vis === 'password' ? 'Password' : 'Public';
-
-  // Check if owner is viewing (has owner token in URL)
-  const isOwner = isShareLink;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -492,84 +1106,417 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(artifact.title)} - AnyArtifact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; height: 100vh; display: flex; flex-direction: column; }
-    .toolbar { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #1a1a1a; border-bottom: 1px solid #333; }
-    .toolbar h1 { font-size: 0.875rem; font-weight: 500; }
-    .toolbar .meta { margin-left: auto; font-size: 0.75rem; color: #888; display: flex; gap: 0.75rem; align-items: center; }
-    .toolbar select { background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; }
-    .toolbar a { color: #6cf; text-decoration: none; font-size: 0.75rem; }
-    .toolbar a:hover { text-decoration: underline; }
-    .artifact-frame { flex: 1; border: none; background: #fff; }
-    .vis-btn { background: ${visColor}; color: ${vis === 'password' ? '#000' : '#fff'}; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: none; position: relative; }
-    .vis-btn:hover { opacity: 0.85; }
-    .vis-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 0; min-width: 220px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #0d0d12;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* TOOLBAR */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 1.25rem;
+      background: rgba(18, 18, 24, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 100;
+    }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-back {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #9ca3af;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .toolbar h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 250px;
+    }
+
+    /* VIEWPORT SIMULATOR */
+    .viewport-controls {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .viewport-btn {
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      padding: 6px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .viewport-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .viewport-btn:hover {
+      color: #fff;
+    }
+    .viewport-btn.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+    
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* SELECT DROPDOWN */
+    .toolbar select {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .toolbar select:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* VISIBILITY DROPDOWN */
+    .vis-container {
+      position: relative;
+    }
+    .vis-btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .vis-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .vis-status-dot {
+      width: 8px;
+      height: 8px;
+      background: ${visColor};
+      border-radius: 50%;
+      box-shadow: 0 0 10px ${visColor};
+    }
+    .vis-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 10px;
+      background: #181822;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 6px;
+      min-width: 240px;
+      z-index: 100;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+      animation: dropdown-fade 0.2s ease;
+    }
+    @keyframes dropdown-fade {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .vis-dropdown.show { display: block; }
-    .vis-option { padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; transition: background 0.15s; }
-    .vis-option:hover { background: #334155; }
-    .vis-option.active { background: #0f172a; color: #38bdf8; }
-    .vis-option .icon { font-size: 1rem; }
-    .vis-option .desc { font-size: 0.75rem; color: #64748b; }
-    .pwd-section { padding: 12px 16px; border-top: 1px solid #334155; display: none; }
+    .vis-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+    .vis-option:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .vis-option.active {
+      background: rgba(99, 102, 241, 0.1);
+      color: #818cf8;
+    }
+    .vis-option .icon { font-size: 1.1rem; }
+    .vis-option .title { font-weight: 600; }
+    .vis-option .desc { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
+    
+    .pwd-section {
+      padding: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: none;
+    }
     .pwd-section.show { display: block; }
-    .pwd-section input { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #475569; border-radius: 4px; color: #fff; font-size: 0.85rem; margin-bottom: 8px; }
-    .pwd-section button { width: 100%; padding: 8px; background: #38bdf8; color: #0f172a; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
-    .pwd-section button:hover { background: #0ea5e9; }
-    .pwd-section .hint { font-size: 0.7rem; color: #64748b; margin-top: 4px; }
-    .copy-btn { background: #334155; color: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 500; cursor: pointer; border: none; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
-    .copy-btn:hover { background: #475569; }
-    .copy-btn.copied { background: #22c55e; color: #000; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: #000; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; opacity: 0; transition: opacity 0.3s; z-index: 200; }
-    .toast.show { opacity: 1; }
-    .toast.error { background: #ef4444; color: #fff; }
+    .pwd-section input {
+      width: 100%;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+      outline: none;
+    }
+    .pwd-section input:focus {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    .pwd-section button {
+      width: 100%;
+      padding: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+    }
+
+    /* ACTION BUTTONS */
+    .btn-action {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .btn-action.copied {
+      background: #10b981;
+      color: #000;
+      border-color: #10b981;
+    }
+
+    .link-raw {
+      color: #3b82f6;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .link-raw:hover { color: #60a5fa; }
+
+    /* IFRAME FRAME CONTAINER */
+    .frame-wrapper {
+      flex: 1;
+      width: 100%;
+      background: #0b0b0e;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 1rem;
+      position: relative;
+    }
+    .artifact-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* TOAST NOTIFICATION */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10b981;
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 200;
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.2);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .toast.error {
+      background: #ef4444;
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(239, 68, 68, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .viewport-controls { display: none; }
+      .meta-item.author { display: none; }
+    }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <h1>${escapeHtml(artifact.title)}</h1>
-    <div class="meta">
-      <div style="position:relative">
-        <button class="vis-btn" onclick="toggleVisDropdown()">${visIcon} ${visLabel}</button>
+    <div class="toolbar-left">
+      <button class="btn-back" onclick="window.location.href='/'" title="Back to Gallery">
+        <svg style="width:16px;height:16px" viewBox="0 0 24 24"><path fill="currentColor" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/></svg>
+      </button>
+      <h1>${escapeHtml(artifact.title)}</h1>
+    </div>
+
+    <div class="viewport-controls">
+      <button class="viewport-btn active" id="btn-desktop" onclick="setViewport('desktop')">
+        <svg viewBox="0 0 24 24"><path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
+        Desktop
+      </button>
+      <button class="viewport-btn" id="btn-tablet" onclick="setViewport('tablet')">
+        <svg viewBox="0 0 24 24"><path d="M19,18H5V6H19M21,2H3A2,2 0 0,0 1,4V20A2,2 0 0,0 3,22H21A2,2 0 0,0 23,20V4C23,2.89 22.1,2 21,2Z"/></svg>
+        Tablet
+      </button>
+      <button class="viewport-btn" id="btn-mobile" onclick="setViewport('mobile')">
+        <svg viewBox="0 0 24 24"><path d="M17,19H7V5H17M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1Z"/></svg>
+        Mobile
+      </button>
+    </div>
+
+    <div class="toolbar-right">
+      <span class="meta-item author">by <b>${escapeHtml(artifact.author_name || 'Anonymous')}</b></span>
+      
+      <div class="vis-container">
+        <button class="vis-btn" onclick="toggleVisDropdown()">
+          <span class="vis-status-dot"></span>
+          ${visIcon} ${visLabel}
+        </button>
         <div class="vis-dropdown" id="visDropdown">
           <div class="vis-option ${vis === 'public' ? 'active' : ''}" onclick="changeVis('public')">
             <span class="icon">🌐</span>
-            <div><div>Public</div><div class="desc">Anyone can view</div></div>
+            <div><div class="title">Public</div><div class="desc">Anyone with link can inspect</div></div>
           </div>
           <div class="vis-option ${vis === 'password' ? 'active' : ''}" onclick="changeVis('password')">
             <span class="icon">🔑</span>
-            <div><div>Password</div><div class="desc">Requires password</div></div>
+            <div><div class="title">Password Protected</div><div class="desc">Requires key entry</div></div>
           </div>
           <div class="vis-option ${vis === 'private' ? 'active' : ''}" onclick="changeVis('private')">
             <span class="icon">🔒</span>
-            <div><div>Private</div><div class="desc">Owner only</div></div>
+            <div><div class="title">Private</div><div class="desc">Only visible to owner</div></div>
           </div>
           <div class="pwd-section" id="pwdSection">
-            <input type="password" id="newPwd" placeholder="Set password..." />
-            <button onclick="savePassword()">Save Password</button>
-            <div class="hint">Set a password for password-protected mode</div>
+            <input type="password" id="newPwd" placeholder="Enter custom password..." />
+            <button onclick="savePassword()">Lock with Password</button>
           </div>
         </div>
       </div>
-      <button class="copy-btn" onclick="copyUrl(this)" id="copyBtn">📋 Copy URL</button>
-      <span>v${version}</span>
-      <span>by ${escapeHtml(artifact.author_name || 'Anonymous')}</span>
-      <select onchange="switchVersion(this.value)">
+
+      <button class="btn-action" onclick="copyUrl(this)">
+        📋 Copy URL
+      </button>
+
+      <select onchange="switchVersion(this.value)" title="Choose Version">
         ${versionOptions}
       </select>
-      <a href="/api/v1/artifacts/${artifact.id}/raw?version=${version}" target="_blank">Raw</a>
-      <a href="/">Gallery</a>
+
+      <a class="link-raw" href="/api/v1/artifacts/${artifact.id}/raw?version=${version}" target="_blank">Raw</a>
     </div>
   </div>
-  <iframe class="artifact-frame" srcdoc="${escapeHtml(content).replace(/"/g, '&quot;')}" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+
+  <div class="frame-wrapper">
+    <iframe class="artifact-frame" id="artifactFrame" srcdoc="${escapeHtml(content).replace(/"/g, '&quot;')}" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+  </div>
+
   <div class="toast" id="toast"></div>
+
   <script>
     const ARTIFACT_ID = '${artifact.id}';
     const OWNER_TOKEN = new URLSearchParams(window.location.search).get('owner') || '';
 
+    function setViewport(device) {
+      const frame = document.getElementById('artifactFrame');
+      document.querySelectorAll('.viewport-btn').forEach(btn => btn.classList.remove('active'));
+      
+      if (device === 'desktop') {
+        frame.style.width = '100%';
+        document.getElementById('btn-desktop').classList.add('active');
+      } else if (device === 'tablet') {
+        frame.style.width = '768px';
+        document.getElementById('btn-tablet').classList.add('active');
+      } else if (device === 'mobile') {
+        frame.style.width = '375px';
+        document.getElementById('btn-mobile').classList.add('active');
+      }
+    }
+
     function switchVersion(v) {
       const url = new URL(window.location.href);
-      url.searchParams.set('v', v);
+      url.searchParams.set('version', v);
       window.location.href = url.toString();
     }
 
@@ -578,12 +1525,12 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       navigator.clipboard.writeText(url).then(() => {
         btn.innerHTML = '✅ Copied!';
         btn.classList.add('copied');
+        showToast('Link copied to clipboard!');
         setTimeout(() => {
           btn.innerHTML = '📋 Copy URL';
           btn.classList.remove('copied');
         }, 2000);
       }).catch(() => {
-        // Fallback
         const input = document.createElement('input');
         input.value = url;
         document.body.appendChild(input);
@@ -592,6 +1539,7 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
         document.body.removeChild(input);
         btn.innerHTML = '✅ Copied!';
         btn.classList.add('copied');
+        showToast('Link copied!');
         setTimeout(() => {
           btn.innerHTML = '📋 Copy URL';
           btn.classList.remove('copied');
@@ -631,19 +1579,19 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
         });
         const data = await res.json();
         if (res.ok) {
-          showToast('✅ Changed to ' + vis);
+          showToast('Visibility updated to ' + vis);
           setTimeout(() => location.reload(), 800);
         } else {
-          showToast('❌ ' + (data.error || 'Failed'), true);
+          showToast(data.error || 'Failed to update visibility', true);
         }
       } catch (e) {
-        showToast('❌ Network error', true);
+        showToast('Network error', true);
       }
     }
 
     async function savePassword() {
       const pwd = document.getElementById('newPwd').value;
-      if (!pwd) { showToast('Enter a password', true); return; }
+      if (!pwd) { showToast('Password cannot be empty', true); return; }
       try {
         const res = await fetch('/api/v1/artifacts/' + ARTIFACT_ID + '/visibility?owner=' + OWNER_TOKEN, {
           method: 'PUT',
@@ -652,13 +1600,13 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
         });
         const data = await res.json();
         if (res.ok) {
-          showToast('✅ Password set!');
+          showToast('Password protected successfully!');
           setTimeout(() => location.reload(), 800);
         } else {
-          showToast('❌ ' + (data.error || 'Failed'), true);
+          showToast(data.error || 'Failed to set password', true);
         }
       } catch (e) {
-        showToast('❌ Network error', true);
+        showToast('Network error', true);
       }
     }
   </script>
@@ -674,41 +1622,95 @@ function renderPasswordPrompt(artifactId: string, type: 'private' | 'password'):
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${isPrivate ? 'Private' : 'Password Protected'} - AnyArtifact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 400px; width: 90%; text-align: center; border: 1px solid #334155; }
-    .icon { font-size: 3rem; margin-bottom: 16px; }
-    h1 { font-size: 1.3rem; margin-bottom: 8px; }
-    p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 24px; }
-    .form-group { margin-bottom: 16px; text-align: left; }
-    .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; }
-    .form-group input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #fff; font-size: 0.95rem; }
-    .form-group input:focus { outline: none; border-color: #38bdf8; }
-    button { width: 100%; padding: 12px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-    button:hover { background: #0ea5e9; }
-    .error { color: #ef4444; font-size: 0.85rem; margin-top: 12px; display: none; }
-    .back { color: #64748b; font-size: 0.8rem; margin-top: 20px; }
-    .back a { color: #38bdf8; text-decoration: none; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #060608;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-image: radial-gradient(circle at center, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
+    }
+    .card {
+      background: rgba(18, 18, 24, 0.6);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 3rem;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+    .icon {
+      font-size: 3rem;
+      background: rgba(255, 255, 255, 0.03);
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p { color: #9ca3af; font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5; }
+    .form-group { margin-bottom: 1.5rem; text-align: left; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-group input:focus { border-color: rgba(99, 102, 241, 0.4); }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: translateY(-1px); }
+    .error { color: #ef4444; font-size: 0.85rem; margin-top: 1rem; display: none; font-weight: 600; }
+    .back { margin-top: 2rem; }
+    .back a { color: #818cf8; text-decoration: none; font-size: 0.88rem; font-weight: 500; }
     .back a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="icon">${isPrivate ? '🔒' : '🔑'}</div>
-    <h1>${isPrivate ? 'This artifact is private' : 'Password Protected'}</h1>
-    <p>${isPrivate ? 'Only the owner can access this artifact.' : 'Enter the password to view this artifact.'}</p>
+    <h1>${isPrivate ? 'This page is private' : 'Password Protected'}</h1>
+    <p>${isPrivate ? 'Only the owner can view this page. If you are the owner, include the owner token in your link.' : 'Enter the secure password to unlock and inspect this artifact.'}</p>
     ${isPrivate ? '' : `
     <form id="pwdForm">
       <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="Enter password" autofocus />
+        <label>Enter Password</label>
+        <input type="password" id="password" placeholder="••••••••" autofocus />
       </div>
-      <button type="submit">Unlock</button>
-      <div class="error" id="error">Incorrect password. Try again.</div>
+      <button type="submit">Unlock Artifact</button>
+      <div class="error" id="error">Incorrect password. Please try again.</div>
     </form>
     `}
-    <div class="back"><a href="/">← Back to AnyArtifact</a></div>
+    <div class="back"><a href="/">← Return to Gallery</a></div>
   </div>
   ${!isPrivate ? `
   <script>
@@ -738,20 +1740,38 @@ function renderNotFound(): string {
 <head>
   <meta charset="UTF-8">
   <title>Not Found - AnyArtifact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .error { text-align: center; }
-    h1 { font-size: 4rem; color: #333; }
-    p { color: #666; margin: 1rem 0; }
-    a { color: #6cf; text-decoration: none; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #060608;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-image: radial-gradient(circle at center, rgba(239, 68, 68, 0.05) 0%, transparent 60%);
+    }
+    .card {
+      text-align: center;
+      max-width: 400px;
+      padding: 2rem;
+    }
+    h1 { font-size: 5rem; font-weight: 800; background: linear-gradient(135deg, #ef4444, #f87171); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; margin-bottom: 1rem; }
+    h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p { color: #9ca3af; font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5; }
+    a { color: #818cf8; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
     a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <div class="error">
+  <div class="card">
     <h1>404</h1>
-    <p>Artifact not found</p>
-    <a href="/">← Back to AnyArtifact</a>
+    <h2>Artifact not found</h2>
+    <p>The page you are looking for does not exist, has been deleted, or is set to private.</p>
+    <a href="/">← Return to Gallery</a>
   </div>
 </body>
 </html>`;

@@ -90,7 +90,7 @@ export async function listApiKeys(): Promise<ApiKeyRecord[]> {
   }
 
   const columns = results[0].columns;
-  return results[0].values.map((values) => ({
+  return results[0].values.map((values: any) => ({
     id: values[columns.indexOf('id')] as number,
     key_hash: values[columns.indexOf('key_hash')] as string,
     key_prefix: values[columns.indexOf('key_prefix')] as string,
