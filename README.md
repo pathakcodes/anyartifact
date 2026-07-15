@@ -1,7 +1,4 @@
-<h1 align="center">
-  <img src="logo.svg" width="32" height="32" align="middle">
-  AnyArtifact
-</h1>
+<h1 align="center"><img src="logo.svg" width="32" height="32" align="middle"> AnyArtifact</h1>
 
 <p align="center">
   <strong>Free interactive web page hosting for any AI agent workflow</strong>
