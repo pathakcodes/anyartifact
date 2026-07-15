@@ -1116,12 +1116,13 @@ Workflow:
 
     document.addEventListener('DOMContentLoaded', () => {
       const termLines = [
-        { type: 'prompt', text: 'AnyAgent: Create a Mars Colony telemetry dashboard.' },
-        { type: 'output', text: '✔ Dashboard HTML generated successfully (48 KB)' },
-        { type: 'input', text: 'anyartifact publish ./mars_colony.html --title "Mars Colony"' },
-        { type: 'output', text: '✔ Connecting to server: https://anyartifact-production.up.railway.app' },
-        { type: 'output', text: '✔ Uploaded artifact "Mars Colony" (v1.0.0)' },
-        { type: 'success', text: '⚡ Live URL: https://anyartifact-production.up.railway.app/share/mars_colony' }
+        { type: 'input', text: 'opencode mcp add anyartifact https://anyartifact-production.up.railway.app/mcp' },
+        { type: 'output', text: '✔ Registered MCP Server "anyartifact" successfully.' },
+        { type: 'input', text: 'opencode chat' },
+        { type: 'prompt', text: 'User: Create an interactive Mars colony dashboard and publish it.' },
+        { type: 'output', text: 'OpenCode: Generating interactive dashboard HTML...' },
+        { type: 'output', text: 'OpenCode: Calling tool "publish_artifact" (Title: Mars Colony Dashboard)...' },
+        { type: 'success', text: '✔ Published! URL: https://anyartifact-production.up.railway.app/share/mars_colony' }
       ];
 
       const termBody = document.getElementById('demoTerminal');
