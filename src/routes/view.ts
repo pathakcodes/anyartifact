@@ -131,6 +131,17 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
     .mcp-example h3{font-size:.85rem;font-weight:600;margin-bottom:.75rem}
     .mcp-example pre{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#d4d4d8;line-height:1.6;overflow-x:auto}
 
+    /* SETUP GRID */
+    .setup-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+    .setup-item{background:#0f0f11;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:12px}
+    .setup-item h4{font-size:.8rem;font-weight:600;margin-bottom:6px;color:#e2e8f0}
+    .setup-cmd{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color .15s}
+    .setup-cmd:hover{border-color:rgba(99,102,241,.4)}
+    .setup-cmd code{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#c084fc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .setup-cmd span{font-size:.6rem;color:#52525b;flex-shrink:0;margin-left:8px}
+    .setup-cmd span.done{color:#22c55e}
+    .hint{font-size:.65rem;color:#3f3f46;margin-top:4px}
+
     /* FOOTER */
     footer{border-top:1px solid rgba(255,255,255,.06);padding:2rem;text-align:center;color:#52525b;font-size:.8rem}
     footer a{color:#a1a1aa}
@@ -166,13 +177,46 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
 
   <section class="prompt-section" id="prompt">
     <div class="prompt-card">
-      <div class="label">📋 SYSTEM PROMPT — COPY TO YOUR CODING ASSISTANT</div>
+      <div class="label">📋 STEP 1 — ADD MCP SERVER</div>
+      <div class="setup-grid">
+        <div class="setup-item">
+          <h4>Claude Code</h4>
+          <div class="setup-cmd" onclick="copyCmd(this)"><code>claude mcp add --transport sse anyartifact https://anyartifact-production.up.railway.app/mcp</code><span>copy</span></div>
+        </div>
+        <div class="setup-item">
+          <h4>Claude Desktop</h4>
+          <div class="setup-cmd" onclick="copyCmd(this)"><code>{"mcpServers":{"anyartifact":{"url":"https://anyartifact-production.up.railway.app/mcp"}}}</code><span>copy JSON</span></div>
+          <p class="hint">Add to ~/Library/Application Support/Claude/claude_desktop_config.json</p>
+        </div>
+        <div class="setup-item">
+          <h4>OpenCode</h4>
+          <div class="setup-cmd" onclick="copyCmd(this)"><code>{"mcp":{"anyartifact":{"type":"remote","url":"https://anyartifact-production.up.railway.app/mcp","enabled":true}}}</code><span>copy JSON</span></div>
+          <p class="hint">Add to ~/.config/opencode/opencode.json</p>
+        </div>
+        <div class="setup-item">
+          <h4>Cursor / Cline / Windsurf</h4>
+          <div class="setup-cmd" onclick="copyCmd(this)"><code>https://anyartifact-production.up.railway.app/mcp</code><span>copy URL</span></div>
+          <p class="hint">Add as MCP server URL in settings</p>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-card" style="margin-top:12px">
+      <div class="label">📋 STEP 2 — ADD THIS RULE TO YOUR PROJECT</div>
       <button class="copy" onclick="copyPrompt(this)">📋 Copy</button>
-      <pre><code>AnyArtifact MCP Server: https://anyartifact-production.up.railway.app/mcp
-MCP Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
-API Endpoint: https://anyartifact-production.up.railway.app/api/v1/artifacts
+      <pre><code>## AnyArtifact Integration
 
-When I ask you to create an interactive HTML artifact (chart, dashboard, visualization, report, or any web page), publish it to AnyArtifact using the publish_artifact MCP tool. Use visibility "public" so anyone with the link can view it. After publishing, give me the URL. The MCP server is already configured — just call publish_artifact with content and title.</code></pre>
+When creating interactive HTML artifacts (charts, dashboards, visualizations, reports, or any web page), use the AnyArtifact MCP tools to publish them.
+
+MCP Server: https://anyartifact-production.up.railway.app/mcp
+Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
+
+Workflow:
+1. Generate the HTML content
+2. Call publish_artifact with content and title
+3. Use visibility "public" so the user can view it
+4. Return the URL to the user
+
+The user can view the artifact at the returned URL. If they want to change visibility, they can use the owner_url.</code></pre>
     </div>
   </section>
 
@@ -299,6 +343,15 @@ When I ask you to create an interactive HTML artifact (chart, dashboard, visuali
         h.textContent = 'copied!';
         h.classList.add('done');
         setTimeout(() => { h.textContent = text.includes('claude') ? 'copy' : text.includes('{') ? 'copy JSON' : 'copy URL'; h.classList.remove('done'); }, 2000);
+      });
+    }
+    function copyCmd(el) {
+      const text = el.querySelector('code').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const s = el.querySelector('span');
+        s.textContent = 'copied!';
+        s.classList.add('done');
+        setTimeout(() => { s.textContent = s.dataset.orig || 'copy'; s.classList.remove('done'); }, 2000);
       });
     }
     function copyPrompt(btn) {
