@@ -1,8 +1,6 @@
 <h1 align="center">
-  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5c5cff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 10px;">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-  <span style="vertical-align: middle;">AnyArtifact</span>
+  <img src="logo.svg" width="32" height="32" align="middle">
+  AnyArtifact
 </h1>
 
 <p align="center">
