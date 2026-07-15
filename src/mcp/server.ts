@@ -136,11 +136,8 @@ function sendSSE(sessionId: string, event: string, data: any) {
   }
 }
 
-/**
- * SSE endpoint - client connects here
- * Server sends endpoint event with message URL
- */
-mcpRoutes.get('/sse', async (c) => {
+// Shared SSE handler
+function handleSSE(c: any) {
   const sessionId = crypto.randomUUID().slice(0, 12);
   const baseUrl = process.env.BASE_URL || `https://${c.req.header('host')}`;
 
@@ -169,7 +166,10 @@ mcpRoutes.get('/sse', async (c) => {
       'X-Accel-Buffering': 'no',
     },
   });
-});
+}
+
+// SSE endpoint at /sse (alternate path)
+mcpRoutes.get('/sse', async (c) => handleSSE(c));
 
 /**
  * Message endpoint - receives JSON-RPC requests from client
@@ -318,16 +318,23 @@ mcpRoutes.post('/tools/call', async (c) => {
 });
 
 /**
- * Server info endpoint
+ * Root MCP endpoint — SSE for MCP clients
+ * Clients like Claude Code hit /mcp directly expecting SSE
  */
 mcpRoutes.get('/', async (c) => {
+  // If client accepts SSE, start SSE session
+  const accept = c.req.header('Accept') || '';
+  if (accept.includes('text/event-stream') || accept === '*/*') {
+    return handleSSE(c);
+  }
+  // Otherwise return JSON info
   return c.json({
     name: 'anyartifact',
     version: '1.0.0',
     protocol: 'mcp',
     transport: ['sse'],
     endpoints: {
-      sse: '/mcp/sse',
+      sse: '/mcp',
       message: '/mcp/message',
     },
     tools: getTools().map(t => t.name),
