@@ -1,77 +1,69 @@
-# AnyArtifact
+<p align="center">
+  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#5c5cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+  </svg>
+</p>
 
-**Free interactive artifact hosting for any AI agent**
+<h1 align="center">AnyArtifact</h1>
 
-AnyArtifact is a free hosting platform where any AI agent (Claude, GPT, Gemini, or any other) can publish interactive HTML artifacts at a persistent URL. No paid plan required to view; simple API key for publishing.
+<p align="center">
+  <strong>Free interactive web page hosting for any AI agent workflow</strong>
+</p>
+
+<p align="center">
+  <a href="https://anyartifact-production.up.railway.app"><strong>anyartifact-production.up.railway.app</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://anyartifact-production.up.railway.app/health"><img src="https://img.shields.io/website?url=https%3A%2F%2Fanyartifact-production.up.railway.app%2Fhealth&label=status&up_color=10b981&down_color=ef4444" alt="Website Status"></a>
+  <img src="https://img.shields.io/github/license/pathakcodes/anyartifact" alt="License">
+  <img src="https://img.shields.io/github/languages/top/pathakcodes/anyartifact" alt="Language">
+</p>
+
+---
+
+AnyArtifact is a free hosting platform where any AI assistant (Claude Code, Cursor, Cline, etc.) can publish interactive HTML artifacts (dashboards, prototypes, maps) instantly. No signups required for viewing, and fully integrated with the Model Context Protocol (MCP).
 
 ## Features
 
-- 🚀 **Free hosting** - No paid plans required
-- 🔌 **MCP Server** - Auto-discovery for Claude Code and Agent SDK
-- 🌐 **Public URLs** - Share artifacts with anyone
-- 📝 **Versioning** - Update artifacts without changing URLs
-- 🔒 **Sandboxed** - Secure iframe rendering
-- ⚡ **Fast** - Lightweight Hono server with SQLite
+* 🚀 **Zero Config Hosting** - Instant deployment of sandboxed HTML content
+* 🔌 **Model Context Protocol (MCP)** - Direct connection to Claude Code and Cursor
+* 📱 **Viewport Simulator** - Test designs inside Desktop, Tablet, and Mobile viewport frames
+* 📝 **Version History** - AI agents can overwrite previous pages to create version tracks
+* 🔒 **Visibility Controls** - Toggle between Public, Private (token-based), or Password-Protected
+* ⚡ **Optimized Engine** - Built with Hono, TypeScript, and compiled Node.js for zero cold starts
 
 ## Quick Start
 
-### 1. Get an API Key
+### 1. Register MCP Server
+Add AnyArtifact as a tool to your AI agent of choice:
 
+**Claude Code**:
 ```bash
-curl -X POST https://your-deployment.up.railway.app/api/v1/keys \
-  -d '{"label": "My Agent"}'
+claude mcp add --transport sse anyartifact https://anyartifact-production.up.railway.app/mcp
 ```
 
-### 2. Publish an Artifact
+**Cursor / Windsurf**:
+Add as an SSE MCP Server inside settings pointing to:
+`https://anyartifact-production.up.railway.app/mcp`
 
-```bash
-curl -X POST https://your-deployment.up.railway.app/api/v1/artifacts \
-  -H "Authorization: Bearer aa_YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "<!DOCTYPE html><html><body><h1>Hello!</h1></body></html>",
-    "title": "My First Artifact"
-  }'
+### 2. Supply Agent Instructions
+Add the following rule to your `.cursorrules` or `.clinerules` to let the agent auto-deploy:
+
+```markdown
+## AnyArtifact Integration
+
+When creating interactive HTML artifacts (charts, dashboards, visualizations, reports, or web pages), use the AnyArtifact MCP tools to publish them.
+
+MCP Server: https://anyartifact-production.up.railway.app/mcp
+Tools: publish_artifact, update_artifact, get_artifact, list_artifacts
+
+Workflow:
+1. Generate the HTML content.
+2. Call publish_artifact with the code and title.
+3. Use visibility "public" so the user can view it.
+4. Return the deployment URL to the user.
 ```
-
-### 3. View Your Artifact
-
-Open the returned URL in your browser!
-
-## Installation
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/anyartifact.git
-cd anyartifact
-
-# Install dependencies
-npm install
-
-# Seed the database with an API key
-npm run db:seed
-
-# Start the development server
-npm run dev
-```
-
-### Docker
-
-```bash
-docker build -t anyartifact .
-docker run -p 3000:3000 -v ./data:/app/data anyartifact
-```
-
-### Deploy to Railway
-
-1. Create a free account at [railway.app](https://railway.app)
-2. Connect your GitHub repository
-3. Add a volume mount at `/app/data`
-4. Deploy!
-
-Your app will be live at `https://your-project.up.railway.app`
 
 ## API Reference
 
@@ -79,85 +71,71 @@ Your app will be live at `https://your-project.up.railway.app`
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/v1/artifacts` | ✅ | Publish new artifact |
-| `PUT` | `/api/v1/artifacts/:id` | ✅ | Update artifact |
-| `DELETE` | `/api/v1/artifacts/:id` | ✅ | Delete artifact |
-| `GET` | `/api/v1/artifacts` | ❌ | List artifacts |
-| `GET` | `/api/v1/artifacts/:id` | ❌ | Get metadata |
-| `GET` | `/api/v1/artifacts/:id/raw` | ❌ | Get raw HTML |
-
-### API Keys
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/keys` | Create new API key |
+| `POST` | `/api/v1/artifacts` | ✅ | Publish a new HTML page |
+| `PUT` | `/api/v1/artifacts/:id` | ✅ | Push a new version to the page |
+| `DELETE` | `/api/v1/artifacts/:id` | ✅ | Delete a page permanently |
+| `GET` | `/api/v1/artifacts` | ❌ | Retrieve recent public pages |
+| `GET` | `/api/v1/artifacts/:id` | ❌ | Get page details & versions |
 
 ### MCP Server
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET` | `/mcp/tools` | List available tools |
-| `POST` | `/mcp/tools/call` | Execute a tool |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/mcp/tools` | List available MCP tools |
+| `POST` | `/mcp/tools/call` | Invoke tool to publish/update |
 
-## MCP Integration
+---
 
-### Claude Code
+## Installation & Local Development
 
-Add AnyArtifact to your Claude Code settings:
+### Prerequisites
+* Node.js >= 20.0.0
+* npm
 
-```bash
-claude mcp add anyartifact https://your-deployment.up.railway.app/mcp
-```
-
-### Agent SDK
-
-```typescript
-import { Client } from "@anthropic-ai/sdk";
-
-const client = new Client({
-  mcpServers: {
-    anyartifact: {
-      url: "https://your-deployment.up.railway.app/mcp"
-    }
-  }
-});
-```
-
-## CLI Tool
+### Running Locally
 
 ```bash
-# Install the CLI
-cd cli && npm install
+# Clone the repository
+git clone https://github.com/pathakcodes/anyartifact.git
+cd anyartifact
 
-# Initialize
-anyartifact init
+# Install dependencies
+npm install
 
-# Publish from file
-anyartifact publish ./my-artifact.html --title "My Chart"
+# Seed the database and generate local developer keys
+npm run db:seed
 
-# Update existing artifact
-anyartifact update aB3kL9mN2pQr ./updated-artifact.html
-
-# List artifacts
-anyartifact list
+# Start the development server
+npm run dev
 ```
 
-## Environment Variables
+### Docker Builds (Production Ready)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3000` | Server port |
-| `BASE_URL` | `http://localhost:3000` | Public URL for artifacts |
-| `DATABASE_PATH` | `./data/anyartifact.db` | SQLite database path |
-| `RATE_LIMIT_PUBLISH` | `60` | Requests per minute for publishing |
-| `RATE_LIMIT_VIEW` | `1000` | Requests per minute for viewing |
+```bash
+# Compile and run container
+docker build -t anyartifact .
+docker run -p 3000:3000 -v ./data:/app/data anyartifact
+```
 
-## Security
+---
 
-- **Sandboxed iframes** - Artifacts run in isolated iframes
-- **Rate limiting** - Prevents abuse
-- **Content validation** - Max 500KB, must be valid HTML
-- **API key authentication** - Required for publishing
+## History & Releases
+
+### v1.2.0 (July 15, 2026)
+* **Revamped UX/UI**: Designed a developer-first dark console layout (mimicking Geist/Linear) with grid backdrops and monochrome borders.
+* **Interactive Prompts**: Added a horizontal marquee ribbon featuring click-to-copy Mars example prompts.
+* **Viewport simulator**: Added Desktop, Tablet, and Mobile simulation buttons to preview published pages on various screen dimensions.
+* **Typing Optimizations**: Switched compiler resolution to `NodeNext` and resolved type shadowing for `sql.js`.
+* **Deployment Refactoring**: Changed production dockerization to build and run compiled standard Node (`node dist/index.js`) instead of `tsx` wrapper.
+* **DB Bug Fixes**: Corrected database migration order where index generations were running before `ALTER TABLE` columns were created.
+
+### v1.1.0 (June 2026)
+* **Security & Tokens**: Added owner token checks and password-protected visibility mode.
+
+### v1.0.0 (May 2026)
+* **First Launch**: Introduced Hono HTTP API, sql.js backend, and the initial Model Context Protocol SSE server endpoints.
+
+---
 
 ## License
 
