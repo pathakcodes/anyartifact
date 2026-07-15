@@ -661,6 +661,18 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
       transform: translateY(0);
     }
 
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.015), transparent 45%);
+      z-index: 1;
+    }
+
     @media (max-width: 768px) {
       .hero h1 { font-size: 2.25rem; }
       .nav-links { display: none; }
@@ -701,16 +713,16 @@ viewRoutes.get('/', viewRateLimit(), async (c) => {
         <div class="prompt-track" id="promptTrack">
           <!-- Duplicated list for marquee -->
           <span onclick="copyPromptText(this)">"publish to anyartifact about mars telemetry dashboard"</span>
-          <span onclick="copyPromptText(this)">"create an interactive canvas paint app and upload it"</span>
-          <span onclick="copyPromptText(this)">"build a solar system gravity physics simulator in html"</span>
-          <span onclick="copyPromptText(this)">"design a responsive climate chart board with chartjs"</span>
-          <span onclick="copyPromptText(this)">"generate a sleek markdown editor tool with real-time preview"</span>
+          <span onclick="copyPromptText(this)">"create an interactive 3D mars colony planner in html"</span>
+          <span onclick="copyPromptText(this)">"build a solar system gravity physics simulator"</span>
+          <span onclick="copyPromptText(this)">"design a responsive mars rover data sensor board"</span>
+          <span onclick="copyPromptText(this)">"generate an Earth vs Mars gravity orbit calculator"</span>
           
           <span onclick="copyPromptText(this)">"publish to anyartifact about mars telemetry dashboard"</span>
-          <span onclick="copyPromptText(this)">"create an interactive canvas paint app and upload it"</span>
-          <span onclick="copyPromptText(this)">"build a solar system gravity physics simulator in html"</span>
-          <span onclick="copyPromptText(this)">"design a responsive climate chart board with chartjs"</span>
-          <span onclick="copyPromptText(this)">"generate a sleek markdown editor tool with real-time preview"</span>
+          <span onclick="copyPromptText(this)">"create an interactive 3D mars colony planner in html"</span>
+          <span onclick="copyPromptText(this)">"build a solar system gravity physics simulator"</span>
+          <span onclick="copyPromptText(this)">"design a responsive mars rover data sensor board"</span>
+          <span onclick="copyPromptText(this)">"generate an Earth vs Mars gravity orbit calculator"</span>
         </div>
       </div>
     </div>
@@ -929,6 +941,11 @@ Workflow:
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 2500);
     }
+
+    document.addEventListener('mousemove', (e) => {
+      document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
+      document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
+    });
   </script>
 </body>
 </html>
