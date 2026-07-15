@@ -1116,10 +1116,8 @@ Workflow:
 
     document.addEventListener('DOMContentLoaded', () => {
       const termLines = [
-        { type: 'input', text: 'opencode mcp add anyartifact https://anyartifact-production.up.railway.app/mcp' },
-        { type: 'output', text: '✔ Registered MCP Server "anyartifact" successfully.' },
-        { type: 'input', text: 'opencode chat' },
-        { type: 'prompt', text: 'User: Create an interactive Mars colony dashboard and publish it.' },
+        { type: 'input', text: 'opencode' },
+        { type: 'prompt', text: 'User: Create a Mars colony dashboard and publish to AnyArtifact.' },
         { type: 'output', text: 'OpenCode: Generating interactive dashboard HTML...' },
         { type: 'output', text: 'OpenCode: Calling tool "publish_artifact" (Title: Mars Colony Dashboard)...' },
         { type: 'success', text: '✔ Published! URL: https://anyartifact-production.up.railway.app/share/mars_colony' }
