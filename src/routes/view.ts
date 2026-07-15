@@ -1606,6 +1606,36 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
       .viewport-controls { display: none; }
       .meta-item.author { display: none; }
     }
+
+    /* FULLSCREEN MODE */
+    body.fullscreen .toolbar { display: none; }
+    body.fullscreen .frame-wrapper { padding: 0; border-radius: 0; }
+    body.fullscreen .artifact-frame { border: none; border-radius: 0; box-shadow: none; }
+    body.fullscreen .toast { z-index: 9999; }
+
+    /* PDF BUTTON */
+    .btn-action.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.3);
+      color: #818cf8;
+    }
+
+    /* PRINT / PDF STYLES */
+    @media print {
+      body { background: #fff !important; }
+      .toolbar, .toast { display: none !important; }
+      .frame-wrapper { padding: 0 !important; background: #fff !important; }
+      .artifact-frame {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        height: 100vh !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1662,6 +1692,16 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
 
       <button class="btn-action" onclick="copyUrl(this)">
         Copy URL
+      </button>
+
+      <button class="btn-action" onclick="toggleFullscreen()" id="fsBtn" title="Present (F)">
+        <svg style="width:12px;height:12px" viewBox="0 0 24 24"><path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M5,17H7V20H10V17H5Z"/></svg>
+        Present
+      </button>
+
+      <button class="btn-action" onclick="downloadPDF()" title="Download as PDF">
+        <svg style="width:12px;height:12px" viewBox="0 0 24 24"><path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M12,19L8,15H10.5V12H13.5V15H16L12,19Z"/></svg>
+        PDF
       </button>
 
       <select onchange="switchVersion(this.value)" title="Choose Version">
@@ -1793,6 +1833,56 @@ function renderViewer(artifact: any, content: string, version: number, isShareLi
         showToast('Network error', true);
       }
     }
+
+    // FULLSCREEN / PRESENT MODE
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          document.body.classList.add('fullscreen');
+          const btn = document.getElementById('fsBtn');
+          btn.innerHTML = '<svg style="width:12px;height:12px" viewBox="0 0 24 24"><path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M5,17H7V20H10V17H5V17Z"/></svg> Exit';
+          btn.classList.add('active');
+          showToast('Press ESC or F to exit fullscreen');
+        }).catch(() => {});
+      } else {
+        document.exitFullscreen().then(() => {
+          document.body.classList.remove('fullscreen');
+          const btn = document.getElementById('fsBtn');
+          btn.innerHTML = '<svg style="width:12px;height:12px" viewBox="0 0 24 24"><path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M5,17H7V20H10V17H5Z"/></svg> Present';
+          btn.classList.remove('active');
+        }).catch(() => {});
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        document.body.classList.remove('fullscreen');
+        const btn = document.getElementById('fsBtn');
+        if (btn) {
+          btn.innerHTML = '<svg style="width:12px;height:12px" viewBox="0 0 24 24"><path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M5,17H7V20H10V17H5Z"/></svg> Present';
+          btn.classList.remove('active');
+        }
+      }
+    });
+
+    // DOWNLOAD PDF
+    function downloadPDF() {
+      showToast('Opening print dialog...');
+      setTimeout(() => window.print(), 300);
+    }
+
+    // KEYBOARD SHORTCUTS
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F') {
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          toggleFullscreen();
+        }
+      }
+      if (e.key === 'Escape' && document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    });
   </script>
 </body>
 </html>`;
